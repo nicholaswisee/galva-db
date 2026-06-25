@@ -1,0 +1,36 @@
+name: galva-db
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: galva-mssql
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${MSSQL_HOST_PORT}:1433"
+    volumes:
+      # Persistent data — survives `docker compose stop` / `down` (NOT `down -v`)
+      - mssql_data:/var/opt/mssql
+      # Seed scripts — auto-run ONLY on first init (empty data volume).
+      # Re-seed: `npm run db:reset` (or `docker compose down -v && up`).
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      # /opt/mssql-tools18/bin/sqlcmd ships inside the image; -C trusts self-signed cert.
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # SQL Server 2022 needs ~2GB to start reliably.
+    # Uncomment if your host is tight on RAM.
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 2G
+
+volumes:
+  mssql_data:
+    name: galva_mssql_data
