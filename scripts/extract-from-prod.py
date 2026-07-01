@@ -371,7 +371,7 @@ def extract(conn, n_pos: int, since_date: dt.date) -> dict[str, list[dict]]:
     if supplier_kodes:
         in_clause = ",".join(["%s"] * len(supplier_kodes))
         suppliers = fetch_dict(cur, f"""
-            SELECT PKbas, Kode, Nama, Kode_Dept, Alamat1, Kota, NPWP, PKP, Syarat,
+            SELECT id_supplier AS PKbas, Kode, Nama, Kode_Dept, Alamat1, Kota, NPWP, PKP, Syarat,
                    MTU, Aktif, Status, SupGroupName
             FROM dbo.Supplier WITH (NOLOCK)
             WHERE Kode IN ({in_clause})
@@ -408,9 +408,9 @@ def extract(conn, n_pos: int, since_date: dt.date) -> dict[str, list[dict]]:
     if dept_kodes:
         in_clause = ",".join(["%s"] * len(dept_kodes))
         departments = fetch_dict(cur, f"""
-            SELECT code AS Kode, description AS Nama
-            FROM dbo.Department WITH (NOLOCK)
-            WHERE code IN ({in_clause})
+            SELECT Kode, Nama
+            FROM dbo.Dept WITH (NOLOCK)
+            WHERE Kode IN ({in_clause})
         """, list(dept_kodes))
     # Synthesize stub departments for any Kode_Dept values referenced by
     # transactions that don't exist in the (possibly empty) prod master.

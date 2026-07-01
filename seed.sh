@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 
 # Read password from .env
 PASSWORD=$(grep '^MSSQL_SA_PASSWORD=' .env | cut -d= -f2 | tr -d "'\"")
-CONTAINER="${COMPOSE_PROJECT_NAME:-galva}_mssql"
+CONTAINER="${COMPOSE_PROJECT_NAME:-galva}-mssql"
 
 RUN_SEED=false
 if [ "${1:-}" = "--seed" ]; then
