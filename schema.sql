@@ -134,7 +134,10 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[Barang](
 	[Kode] [nvarchar](50) NULL,
-	[Nama] [nvarchar](255) NULL
+	[Nama] [nvarchar](255) NULL,
+	[Merk] [nvarchar](100) NULL,
+	[Satuan] [nvarchar](10) NULL,
+	[Harga] [float] NULL
 ) ON [PRIMARY]
 
 GO
@@ -634,6 +637,68 @@ CREATE TABLE [dbo].[PO](
 GO
 SET ANSI_PADDING OFF
 GO
+/****** Object:  Table [dbo].[POConfirmation]    Script Date: 7/2/2026 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_PADDING ON
+GO
+CREATE TABLE [dbo].[POConfirmation](
+	[Doku] [nvarchar](50) NULL,
+	[Tgl] [smalldatetime] NULL,
+	[Doku_PO] [nvarchar](50) NULL,
+	[Kode_Supplier] [nvarchar](12) NULL,
+	[Kode_dept] [nvarchar](12) NULL,
+	[Kode_Valas] [nvarchar](12) NULL,
+	[Kurs] [float] NULL,
+	[ContactPr] [nvarchar](40) NULL,
+	[Psd] [smalldatetime] NULL,
+	[Etd] [smalldatetime] NULL,
+	[Memo] [text] NULL,
+	[Nilai] [float] NULL,
+	[PPN] [float] NULL,
+	[Diskon] [float] NULL,
+	[STS] [nvarchar](3) NULL,
+	[EntryDate] [smalldatetime] NULL,
+	[id_po_confirmation] [bigint] IDENTITY(1,1) NOT NULL,
+	[RowVersion] [timestamp] NOT NULL,
+ CONSTRAINT [PK_POConfirmation] PRIMARY KEY CLUSTERED 
+(
+	[id_po_confirmation] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+GO
+SET ANSI_PADDING OFF
+GO
+/****** Object:  Table [dbo].[SubPOConfirmation]    Script Date: 7/2/2026 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_PADDING ON
+GO
+CREATE TABLE [dbo].[SubPOConfirmation](
+	[Doku] [nvarchar](50) NULL,
+	[id_sub_po] [bigint] NULL,
+	[Kode_Brg] [nvarchar](50) NULL,
+	[Jumlah] [float] NULL,
+	[Harga] [float] NULL,
+	[Total] [float] NULL,
+	[Kode_Gudang] [nvarchar](10) NULL,
+	[Note] [nvarchar](255) NULL,
+	[EntryDate] [smalldatetime] NULL,
+	[id_sub_po_confirmation] [bigint] IDENTITY(1,1) NOT NULL,
+ CONSTRAINT [PK_SubPOConfirmation] PRIMARY KEY CLUSTERED 
+(
+	[id_sub_po_confirmation] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+SET ANSI_PADDING OFF
+GO
 /****** Object:  Table [dbo].[SaldoAP]    Script Date: 6/26/2026 3:26:09 PM ******/
 SET ANSI_NULLS ON
 GO
@@ -951,7 +1016,7 @@ CREATE TABLE [dbo].[SubPO](
 	[Kode_Brg] [nvarchar](50) NULL,
 	[Kode_Dept] [nvarchar](12) NULL,
 	[Kode_Gudang] [nvarchar](10) NULL,
-	[Alias] [nvarchar](20) NULL,
+	[Alias] [nvarchar](255) NULL,
 	[HargaJasa] [float] NULL,
 	[HargaMaterial] [float] NULL,
 	[Harga] [float] NULL,
@@ -991,6 +1056,9 @@ CREATE TABLE [dbo].[SubPO](
 	[KodeRnd_SO] [nvarchar](255) NULL,
 	[id_sub_po] [bigint] IDENTITY(1,1) NOT NULL,
 	[Model] [nvarchar](255) NULL,
+	[Merk] [nvarchar](100) NULL,
+	[Satuan] [nvarchar](10) NULL,
+	[DiscPct] [float] NULL,
  CONSTRAINT [PK_SubPO] PRIMARY KEY CLUSTERED 
 (
 	[id_sub_po] ASC
@@ -1628,59 +1696,101 @@ CREATE TABLE [dbo].[Tx_PushSubscription](
 );
 GO
 
--- Department master (referenced by Kode_Dept across tables but no master existed)
-CREATE TABLE [dbo].[Department](
-    [Kode] NVARCHAR(20) PRIMARY KEY,
-    [Nama] NVARCHAR(100) NOT NULL
-);
+-- VoucherAP (prod-faithful column names: TglDoku, no Kode_Bank, no Status)
+-- ponytail: trimmed ~120 paired cost-*/FP columns from prod's 140-col VoucherAP;
+--           re-add from fetched_ddl.sql if AP cost-distribution rows are needed.
+SET ANSI_NULLS ON
 GO
-
--- Missing SubBayar table (Payment Details - referenced by Bayar)
-CREATE TABLE [dbo].[SubBayar](
-    [PKbas] BIGINT IDENTITY(1, 1) PRIMARY KEY,
-    [Doku] NVARCHAR(50) NULL,
-    [Tgl] SMALLDATETIME NULL,
-    [Doku_LPB] NVARCHAR(50) NULL,
-    [Doku_PO] NVARCHAR(50) NULL,
-    [Doku_Voucher] NVARCHAR(50) NULL,
-    [Kode_Supplier] NVARCHAR(50) NULL,
-    [Kode_Brg] NVARCHAR(50) NULL,
-    [Nilai] FLOAT NULL,
-    [NilaiBayar] FLOAT NULL,
-    [Kode_Valas] NVARCHAR(12) NULL,
-    [Kurs] FLOAT NULL,
-    [NoUrut] SMALLINT NULL,
-    [Keterangan] NVARCHAR(255) NULL,
-    [UserID] NVARCHAR(100) NULL,
-    [EntryDate] SMALLDATETIME NULL
-);
+SET QUOTED_IDENTIFIER ON
 GO
-
--- VoucherAP table (was missing from test.sql - AP Voucher header)
 CREATE TABLE [dbo].[VoucherAP](
-    [PKbas] BIGINT IDENTITY(1, 1) PRIMARY KEY,
-    [Doku] NVARCHAR(50) NULL,
-    [Tgl] SMALLDATETIME NULL,
-    [Kode_Supplier] NVARCHAR(50) NULL,
-    [Kode_Dept] NVARCHAR(20) NULL,
-    [Kode_Bank] NVARCHAR(20) NULL,
-    [Kode_Valas] NVARCHAR(12) NULL,
-    [Kurs] FLOAT NULL,
-    [Nilai] FLOAT NULL,
-    [PPn] FLOAT NULL,
-    [PPnBm] FLOAT NULL,
-    [Diskon] FLOAT NULL,
-    [DiskonTunai] FLOAT NULL,
-    [Misc] FLOAT NULL,
-    [STS] NVARCHAR(5) NULL,
-    [Status] NVARCHAR(20) NULL,
-    [Keterangan] NVARCHAR(255) NULL,
-    [UserID] NVARCHAR(100) NULL,
-    [Hapus] NVARCHAR(100) NULL,
-    [EntryDate] SMALLDATETIME NULL,
-    [StatusGL] NVARCHAR(12) NULL,
-    [RowVersion] ROWVERSION NOT NULL
-);
+    [PKbas] [bigint] IDENTITY(1,1) NOT NULL,
+    [Doku] [nvarchar](50) NULL,
+    [TglDoku] [smalldatetime] NULL,
+    [Kode_Supplier] [nvarchar](20) NULL,
+    [Kode_Dept] [nvarchar](20) NULL,
+    [Doku_LPB] [nvarchar](50) NULL,
+    [Doku_PO] [nvarchar](50) NULL,
+    [TipeBiaya] [nvarchar](10) NULL,
+    [TglDokuLPB] [smalldatetime] NULL,
+    [TglDokuPO] [smalldatetime] NULL,
+    [Syarat] [smallint] NULL,
+    [TglJatuhTempo] [smalldatetime] NULL,
+    [Kode_Valas] [nvarchar](12) NULL,
+    [Kurs] [float] NULL,
+    [KursPajak] [float] NULL,
+    [Diskon] [float] NULL,
+    [DiskonTunai] [float] NULL,
+    [PPn] [float] NULL,
+    [PPnBm] [float] NULL,
+    [Misc] [float] NULL,
+    [NilaiLPB] [float] NULL,
+    [Nilai] [float] NULL,
+    [Keterangan] [nvarchar](255) NULL,
+    [STS] [nvarchar](2) NULL,
+    [Tipe] [nvarchar](10) NULL,
+    [NoUrut] [smallint] NULL,
+    [EntryDate] [smalldatetime] NULL,
+    [UserID] [nvarchar](100) NULL,
+    [Doku_FP] [nvarchar](50) NULL,
+    [Tgl_FP] [smalldatetime] NULL,
+    [EFaktur] [nvarchar](255) NULL,
+    [PPnTunai] [float] NULL,
+    [Kode_IDN] [nvarchar](50) NULL,
+    [ModulSource] [nvarchar](50) NULL,
+    [MajorDiskon] [nvarchar](20) NULL,
+    [DPPNilaiLain] [float] NULL,
+    [RowVersion] [timestamp] NOT NULL,
+ CONSTRAINT [PK_VoucherAP] PRIMARY KEY CLUSTERED
+ ([PKbas] ASC) WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF, IGNORE_DUP_KEY=OFF, ALLOW_ROW_LOCKS=ON, ALLOW_PAGE_LOCKS=ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+-- SubBayar (prod-faithful: Doku_Faktur/Giro/Kode_Bank FX-payment columns)
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[SubBayar](
+    [PKbas] [bigint] IDENTITY(1,1) NOT NULL,
+    [Doku] [varchar](50) NULL,
+    [Tgl] [smalldatetime] NULL,
+    [Kode_Supplier] [nvarchar](20) NULL,
+    [Doku_Faktur] [nvarchar](50) NULL,
+    [Doku_LPB] [nvarchar](50) NULL,
+    [SuratJalan] [nvarchar](50) NULL,
+    [Giro] [nvarchar](25) NULL,
+    [TglGiro] [smalldatetime] NULL,
+    [Nilai] [float] NULL,
+    [DiskonTunai] [float] NULL,
+    [TotalNilai] [float] NULL,
+    [Sts] [nvarchar](1) NULL,
+    [Doku_Muka] [nvarchar](50) NULL,
+    [NoUrut] [smallint] NULL,
+    [Cara] [nvarchar](100) NULL,
+    [Kode_Valas] [nvarchar](10) NULL,
+    [Kode_ValasBayar] [nvarchar](10) NULL,
+    [NilaiLocal] [float] NULL,
+    [NilaiForeign] [float] NULL,
+    [Kurs] [float] NULL,
+    [KursBayar] [float] NULL,
+    [KursLocal] [float] NULL,
+    [KursKonversi] [float] NULL,
+    [Kode_Bank] [nvarchar](20) NULL,
+    [SelisihTagih] [float] NULL,
+    [Keterangan] [nvarchar](100) NULL,
+    [Status] [nvarchar](1) NULL,
+    [UserID] [nvarchar](100) NULL,
+    [Hapus] [nvarchar](100) NULL,
+    [EntryDate] [smalldatetime] NULL,
+    [Kode_Dept] [nvarchar](10) NULL,
+    [Reference] [nvarchar](20) NULL,
+    [NoUrutDN] [int] NULL,
+    [ReferenceKasBank] [nvarchar](50) NULL,
+    [FakturPajak] [nvarchar](30) NULL,
+ CONSTRAINT [PK_SubBayar] PRIMARY KEY CLUSTERED
+ ([PKbas] ASC) WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF, IGNORE_DUP_KEY=OFF, ALLOW_ROW_LOCKS=ON, ALLOW_PAGE_LOCKS=ON) ON [PRIMARY]
+) ON [PRIMARY]
 GO
 
 -- Optimistic Concurrency: RowVersion on transaction headers
@@ -1695,4 +1805,215 @@ GO
 ALTER TABLE [dbo].[Bayar] ADD [RowVersion] ROWVERSION NOT NULL;
 GO
 ALTER TABLE [dbo].[Supplier] ADD [RowVersion] ROWVERSION NOT NULL;
+GO
+
+
+-- =========================================
+-- PROD-FAITHFUL EXTENSIONS (fetched from XTechnologies2018IN via sys.columns)
+-- =========================================
+
+-- Department master. Prod's dbo.Dept has id_dept IDENTITY PK; Kode is a natural key.
+-- ponytail: trimmed Dept's print-layout + approver columns; re-add if PO/Faktur
+--           signature-block rendering is needed.
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Dept](
+    [id_dept] [bigint] IDENTITY(1,1) NOT NULL,
+    [KodeGTC] [nvarchar](12) NULL,
+    [KodeEPK] [nvarchar](12) NULL,
+    [Kode] [nvarchar](20) NULL,
+    [Nama] [nvarchar](50) NULL,
+    [NamaUser] [nvarchar](50) NULL,
+    [TglUpDate] [smalldatetime] NULL,
+    [Head] [nvarchar](35) NULL,
+    [Chief] [nvarchar](35) NULL,
+    [Staff] [nvarchar](35) NULL,
+    [UserID] [nvarchar](100) NULL,
+    [Hapus] [nvarchar](100) NULL,
+    [EntryDate] [smalldatetime] NULL,
+    [NewEPK] [nvarchar](50) NULL,
+    [SYARAT] [int] NULL,
+    [HideReport] [bit] NULL,
+    [dept_group] [varchar](50) NULL,
+    [NonAktif] [bit] NULL,
+    [NonAktifTime] [smalldatetime] NULL,
+    [Kode_Master_Department] [nvarchar](50) NULL,
+ CONSTRAINT [PK_Dept] PRIMARY KEY CLUSTERED
+ ([id_dept] ASC) WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF, IGNORE_DUP_KEY=OFF, ALLOW_ROW_LOCKS=ON, ALLOW_PAGE_LOCKS=ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+-- Area master (Kode_Area on Supplier/Gudang/Bank)
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Area](
+    [id_area] [bigint] IDENTITY(1,1) NOT NULL,
+    [KodeGTC] [nvarchar](12) NULL,
+    [KodeEPK] [nvarchar](12) NULL,
+    [Kode] [nvarchar](50) NULL,
+    [Nama] [nvarchar](255) NULL,
+    [Lokasi] [nvarchar](255) NULL,
+    [NoCounter1] [nvarchar](50) NULL,
+    [NoCounter2] [nvarchar](50) NULL,
+    [NoCounter3] [nvarchar](50) NULL,
+    [UserID] [nvarchar](100) NULL,
+    [Hapus] [nvarchar](100) NULL,
+    [EntryDate] [smalldatetime] NULL,
+    [ALAMAT1] [nvarchar](250) NULL,
+    [ALAMAT2] [nvarchar](250) NULL,
+    [NPWP] [nvarchar](100) NULL,
+    [PT] [nvarchar](100) NULL,
+    [NewEPK] [nvarchar](50) NULL,
+    [kodelama] [nvarchar](50) NULL,
+    [KodeAcer] [nvarchar](50) NULL,
+    [KodeECom] [nvarchar](20) NULL,
+    [HideReport] [bit] NULL,
+    [kode_master_area] [varchar](50) NULL,
+ CONSTRAINT [PK_Area] PRIMARY KEY CLUSTERED
+ ([id_area] ASC) WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF, IGNORE_DUP_KEY=OFF, ALLOW_ROW_LOCKS=ON, ALLOW_PAGE_LOCKS=ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+-- Sales rep master (Kode_Sales on Supplier/SubSPB/Faktur)
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Sales](
+    [id_sales] [bigint] IDENTITY(1,1) NOT NULL,
+    [Kode] [nvarchar](12) NULL,
+    [KodeLama] [nvarchar](12) NULL,
+    [Nama] [nvarchar](50) NULL,
+    [NoCounter1] [nvarchar](50) NULL,
+    [UserID] [nvarchar](100) NULL,
+    [Hapus] [nvarchar](100) NULL,
+    [EntryDate] [smalldatetime] NULL,
+    [kode_area] [nvarchar](20) NULL,
+    [NewEPK] [nvarchar](50) NULL,
+    [Telepon1] [nvarchar](20) NULL,
+    [Telepon2] [nvarchar](20) NULL,
+    [email] [nvarchar](50) NULL,
+    [no_rekening] [varchar](50) NULL,
+    [UserLogin] [varchar](50) NULL,
+    [handphone] [varchar](30) NULL,
+    [kode_admin] [varchar](50) NULL,
+    [Diskontinue] [bit] NULL,
+    [TglDiskontinue] [datetime] NULL,
+    [Kode_AreaOld] [nvarchar](50) NULL,
+ CONSTRAINT [PK_Sales] PRIMARY KEY CLUSTERED
+ ([id_sales] ASC) WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF, IGNORE_DUP_KEY=OFF, ALLOW_ROW_LOCKS=ON, ALLOW_PAGE_LOCKS=ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+-- Currency rate history (Kode_Valas on transaction headers). Loose, no PK.
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[VALAS2](
+    [Keterangan] [varchar](255) NULL,
+    [Tanggal] [datetime2](7) NULL,
+    [RateBI] [real] NULL,
+    [RatePajak] [real] NULL,
+    [Rate] [real] NULL,
+    [Kode] [varchar](50) NULL
+) ON [PRIMARY]
+GO
+
+-- Item transfer type (48 rows); referenced by stock movements / TTP family.
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[JenisTransferBarang](
+    [IdJenisTransferBarang] [bigint] IDENTITY(1,1) NOT NULL,
+    [Kode] [nvarchar](20) NULL,
+    [Nama] [nvarchar](100) NULL,
+    [Major] [nvarchar](20) NULL,
+    [UserID] [nvarchar](100) NULL,
+    [Hapus] [nvarchar](100) NULL,
+    [EntryDate] [smalldatetime] NULL,
+    [ShowDOJ] [int] NULL,
+    [SJLoanJurnal] [bit] NULL,
+ CONSTRAINT [PK_JenisTransferBarang] PRIMARY KEY CLUSTERED
+ ([IdJenisTransferBarang] ASC) WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF, IGNORE_DUP_KEY=OFF, ALLOW_ROW_LOCKS=ON, ALLOW_PAGE_LOCKS=ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+-- Current stock balance per item/warehouse/dept. Loose (no PK in prod).
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[SKU_Stok](
+    [Kode_Brand] [varchar](50) NULL,
+    [kode_dept] [varchar](50) NULL,
+    [Lokasi] [varchar](50) NULL,
+    [ItemCode] [varchar](50) NULL,
+    [kode_baru] [varchar](50) NULL,
+    [Kode_Gudang] [varchar](50) NULL,
+    [Qty] [varchar](50) NULL
+) ON [PRIMARY]
+GO
+
+-- Monthly stock/saldo history per item/dept/area. Composite PK.
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[HistStokMon](
+    [ItemCode] [nvarchar](50) NOT NULL,
+    [Period] [datetime] NOT NULL,
+    [Kode_Dept] [nvarchar](20) NOT NULL,
+    [Stok] [float] NOT NULL,
+    [Saldo] [float] NOT NULL,
+    [Kode_Area] [nvarchar](20) NOT NULL,
+ CONSTRAINT [PK_histstokmon] PRIMARY KEY CLUSTERED
+ ([ItemCode] ASC, [Kode_Dept] ASC, [Period] ASC, [Kode_Area] ASC)
+ WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF, IGNORE_DUP_KEY=OFF, ALLOW_ROW_LOCKS=ON, ALLOW_PAGE_LOCKS=ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+-- Stock count header (Opname). 0 rows in prod but schema provided for completeness.
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TRStokOpname](
+    [Doku] [nvarchar](50) NOT NULL,
+    [Tgl] [smalldatetime] NOT NULL,
+    [GudangCode] [nvarchar](20) NOT NULL,
+    [Ket] [nvarchar](255) NOT NULL,
+    [CreatedBy] [nvarchar](50) NOT NULL,
+    [CreatedDate] [datetime] NOT NULL,
+    [CreatedFromModul] [nvarchar](50) NOT NULL,
+    [LastUpdatedBy] [nvarchar](50) NOT NULL,
+    [LastUpdatedDate] [datetime] NOT NULL,
+    [LastUpdatedFromModul] [nvarchar](50) NOT NULL,
+ CONSTRAINT [PK_TRStokOpname] PRIMARY KEY CLUSTERED
+ ([Doku] ASC) WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF, IGNORE_DUP_KEY=OFF, ALLOW_ROW_LOCKS=ON, ALLOW_PAGE_LOCKS=ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+-- Stock count line. Composite PK (Doku + Kode).
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TRStokOpnameSub](
+    [Doku] [nvarchar](50) NOT NULL,
+    [Kode] [nvarchar](50) NOT NULL,
+    [Stok] [float] NOT NULL,
+    [Qty] [float] NOT NULL,
+    [Ket] [nvarchar](255) NOT NULL,
+    [UnitCode] [nvarchar](20) NOT NULL,
+    [Adj] [float] NOT NULL,
+    [AD] [int] NOT NULL,
+ CONSTRAINT [PK_TRStokOpnameSub] PRIMARY KEY CLUSTERED
+ ([Doku] ASC, [Kode] ASC) WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF, IGNORE_DUP_KEY=OFF, ALLOW_ROW_LOCKS=ON, ALLOW_PAGE_LOCKS=ON) ON [PRIMARY]
+) ON [PRIMARY]
 GO

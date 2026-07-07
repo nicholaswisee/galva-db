@@ -53,7 +53,7 @@ DEFAULTS = dict(
 # ---------------------------------------------------------------------------
 
 # Note: source DB has some column-name mismatches vs. local DB (e.g.
-# Department[code,description] -> Department[Kode,Nama]) and missing
+# Dept[Kode,Nama] etc.) and missing
 # columns (e.g. VoucherAP has no Memo, only Keterangan).  We map them here.
 
 # A special "identity" entry per table tells the emitter to:
@@ -62,9 +62,13 @@ DEFAULTS = dict(
 # Source tables that don't have IDENTITY columns simply omit this entry.
 
 SCHEMA: dict[str, list[tuple[str, str]]] = {
-    "Department": [
-        ("code", "Kode"),
-        ("description", "Nama"),
+    "Dept": [
+        # Prod's dbo.Dept has id_dept IDENTITY PK; transaction FKs walk via
+        # the natural Kode_Dept -> Kode, so we don't preserve id_dept locally.
+        ("Kode", "Kode"),
+        ("Nama", "Nama"),
+        ("KodeGTC", "KodeGTC"),
+        ("KodeEPK", "KodeEPK"),
     ],
     "Supplier": [
         # local PK is IDENTITY(1,1) -> PKbas. Source also has PKbas.
@@ -183,23 +187,42 @@ SCHEMA: dict[str, list[tuple[str, str]]] = {
         ("Kurs", "Kurs"),
     ],
     "VoucherAP": [
-        # local PK is IDENTITY -> PKbas. Source has PKbas too.
-        # Local schema has [Tgl]; remote uses [TglDoku] -- alias it.
-        # NOTE: prod VoucherAP also has Doku_LPB / Doku_PO but the local
-        # VoucherAP does NOT -- those refs live in SubVoucherAP only.
+        # Local schema is now prod-faithful: TglDoku (not Tgl), Doku_LPB,
+        # Doku_PO, TipeBiaya all present locally. No column aliases needed.
         ("PKbas", "PKbas"),
         ("Doku", "Doku"),
-        ("TglDoku", "Tgl"),
+        ("TglDoku", "TglDoku"),
         ("Kode_Supplier", "Kode_Supplier"),
         ("Kode_Dept", "Kode_Dept"),
-        ("Nilai", "Nilai"),
-        ("PPn", "PPn"),
-        ("Diskon", "Diskon"),
-        ("Misc", "Misc"),
-        ("STS", "STS"),
-        ("Keterangan", "Keterangan"),
+        ("Doku_LPB", "Doku_LPB"),
+        ("Doku_PO", "Doku_PO"),
+        ("TipeBiaya", "TipeBiaya"),
+        ("Syarat", "Syarat"),
+        ("TglJatuhTempo", "TglJatuhTempo"),
         ("Kode_Valas", "Kode_Valas"),
         ("Kurs", "Kurs"),
+        ("KursPajak", "KursPajak"),
+        ("Diskon", "Diskon"),
+        ("DiskonTunai", "DiskonTunai"),
+        ("PPn", "PPn"),
+        ("PPnBm", "PPnBm"),
+        ("Misc", "Misc"),
+        ("NilaiLPB", "NilaiLPB"),
+        ("Nilai", "Nilai"),
+        ("Keterangan", "Keterangan"),
+        ("STS", "STS"),
+        ("Tipe", "Tipe"),
+        ("NoUrut", "NoUrut"),
+        ("EntryDate", "EntryDate"),
+        ("UserID", "UserID"),
+        ("Doku_FP", "Doku_FP"),
+        ("Tgl_FP", "Tgl_FP"),
+        ("EFaktur", "EFaktur"),
+        ("PPnTunai", "PPnTunai"),
+        ("Kode_IDN", "Kode_IDN"),
+        ("ModulSource", "ModulSource"),
+        ("MajorDiskon", "MajorDiskon"),
+        ("DPPNilaiLain", "DPPNilaiLain"),
     ],
     "SubVoucherAP": [
         ("Doku", "Doku"),
@@ -215,6 +238,40 @@ SCHEMA: dict[str, list[tuple[str, str]]] = {
         ("Kode_Valas", "Kode_Valas"),
         ("Kurs", "Kurs"),
     ],
+    "SubBayar": [
+        # Payment detail. Prod has Doku_Faktur/Giro/Kode_Bank FX-payment cols.
+        # Not part of the central seed spine (SubBayar.Doku_LPB is 0% in prod)
+        # but the schema is now prod-faithful so we map it for completeness.
+        ("PKbas", "PKbas"),
+        ("Doku", "Doku"),
+        ("Tgl", "Tgl"),
+        ("Kode_Supplier", "Kode_Supplier"),
+        ("Doku_Faktur", "Doku_Faktur"),
+        ("Doku_LPB", "Doku_LPB"),
+        ("SuratJalan", "SuratJalan"),
+        ("Giro", "Giro"),
+        ("TglGiro", "TglGiro"),
+        ("Nilai", "Nilai"),
+        ("DiskonTunai", "DiskonTunai"),
+        ("TotalNilai", "TotalNilai"),
+        ("Sts", "Sts"),
+        ("Doku_Muka", "Doku_Muka"),
+        ("NoUrut", "NoUrut"),
+        ("Cara", "Cara"),
+        ("Kode_Valas", "Kode_Valas"),
+        ("Kode_ValasBayar", "Kode_ValasBayar"),
+        ("NilaiLocal", "NilaiLocal"),
+        ("NilaiForeign", "NilaiForeign"),
+        ("Kurs", "Kurs"),
+        ("KursBayar", "KursBayar"),
+        ("Kode_Bank", "Kode_Bank"),
+        ("Keterangan", "Keterangan"),
+        ("Status", "Status"),
+        ("UserID", "UserID"),
+        ("Hapus", "Hapus"),
+        ("EntryDate", "EntryDate"),
+        ("Kode_Dept", "Kode_Dept"),
+    ],
 }
 
 # Tables that get only top-N by activity, capped to avoid bloating the seed
@@ -222,7 +279,7 @@ MASTER_CAPS = {
     "Supplier": 25,    # only suppliers appearing in our selected POs
     "Barang": 40,      # only items appearing in our selected SubPOs
     "Gudang": 10,      # only warehouses used in our selected LPBs/POs
-    "Department": 10,
+    "Dept": 10,
     "Bank": 8,
     "Category": 8,
     "Satuan": 8,
@@ -318,9 +375,13 @@ def extract(conn, n_pos: int, since_date: dt.date) -> dict[str, list[dict]]:
     if lpb_dokus:
         in_clause = ",".join(["%s"] * len(lpb_dokus))
         vchs = fetch_dict(cur, f"""
-            SELECT PKbas, Doku, TglDoku AS [Tgl], Kode_Supplier, Kode_Dept,
-                   Nilai, PPn, Diskon, Misc, STS, Keterangan,
-                   Kode_Valas, Kurs
+            SELECT PKbas, Doku, TglDoku, Kode_Supplier, Kode_Dept,
+                   Doku_LPB, Doku_PO, TipeBiaya, TglDokuLPB, TglDokuPO,
+                   Syarat, TglJatuhTempo, Kode_Valas, Kurs, KursPajak,
+                   Diskon, DiskonTunai, PPn, PPnBm, Misc, NilaiLPB, Nilai,
+                   Keterangan, STS, Tipe, NoUrut, EntryDate, UserID,
+                   Doku_FP, Tgl_FP, EFaktur, PPnTunai, Kode_IDN, ModulSource,
+                   MajorDiskon, DPPNilaiLain
             FROM dbo.VoucherAP WITH (NOLOCK)
             WHERE Doku_LPB IN ({in_clause})
         """, lpb_dokus)
@@ -408,7 +469,7 @@ def extract(conn, n_pos: int, since_date: dt.date) -> dict[str, list[dict]]:
     if dept_kodes:
         in_clause = ",".join(["%s"] * len(dept_kodes))
         departments = fetch_dict(cur, f"""
-            SELECT Kode, Nama
+            SELECT Kode, Nama, KodeGTC, KodeEPK
             FROM dbo.Dept WITH (NOLOCK)
             WHERE Kode IN ({in_clause})
         """, list(dept_kodes))
@@ -417,7 +478,7 @@ def extract(conn, n_pos: int, since_date: dt.date) -> dict[str, list[dict]]:
     missing_dept = dept_kodes - {d["Kode"] for d in departments}
     for k in sorted(missing_dept):
         departments.append({"Kode": k, "Nama": f"DEPT {k} (synthetic)"})
-    print(f"[6d] Department master rows: {len(departments)} (synthesized {len(missing_dept)})")
+    print(f"[6d] Dept master rows: {len(departments)} (synthesized {len(missing_dept)})")
 
     # Static-ish masters: take a small set of real rows for the app to work
     banks = fetch_dict(cur, """
@@ -447,7 +508,7 @@ def extract(conn, n_pos: int, since_date: dt.date) -> dict[str, list[dict]]:
     # schema column isn't a PK (e.g. detail tables that don't have an
     # IDENTITY column in scope).
     out = {
-        "Department": departments,
+        "Dept": departments,
         "Supplier": suppliers,
         "Barang": barangs,
         "Gudang": gudangs,
@@ -460,13 +521,14 @@ def extract(conn, n_pos: int, since_date: dt.date) -> dict[str, list[dict]]:
         "SubLPB": sub_lpbs,
         "VoucherAP": vchs,
         "SubVoucherAP": sub_vchs,
+        "SubBayar": [],  # populated below if prod has rows worth seeding
     }
     pk_col = {
-        "Department": "Kode", "Supplier": "Kode", "Barang": "Kode",
+        "Dept": "Kode", "Supplier": "Kode", "Barang": "Kode",
         "Gudang": "Kode", "Bank": "Kode", "Category": "Kode",
         "Satuan": "Kode", "PO": "Doku", "SubPO": "Doku",
         "LPB": "Doku", "SubLPB": "Doku", "VoucherAP": "Doku",
-        "SubVoucherAP": "Doku",
+        "SubVoucherAP": "Doku", "SubBayar": "Doku",
     }
     for t, rows in out.items():
         col = pk_col.get(t)
@@ -506,7 +568,7 @@ PRINT 'Seed from prod applied successfully.';
 # (SQL Server allows IDENTITY_INSERT=ON on only one table per session.)
 IDENTITY_TABLES = {
     "Supplier", "Gudang", "Bank", "Category", "Satuan",
-    "PO", "LPB", "VoucherAP",
+    "PO", "LPB", "VoucherAP", "SubBayar",
 }
 
 
@@ -516,7 +578,7 @@ def emit_inserts(table: str, rows: list[dict]) -> str:
     `rows` are dicts keyed by the TARGET column name (so a synthesized
     row uses the same key shape as a row pulled from prod, after
     fetch_dict's column aliasing).  When a source row used a different
-    name (e.g. Department[code] -> Department[Kode]), the SELECT in
+    name (e.g. Dept[code] -> Dept[Kode]), the SELECT in
     extract() aliases it; the synthesizer uses target names directly.
 
     Tables whose PK is an IDENTITY column are wrapped in
@@ -542,8 +604,8 @@ def emit_inserts(table: str, rows: list[dict]) -> str:
 # Order matters: masters first, then headers, then detail lines.
 # Note: IDENTITY_INSERT lets us preserve the source PKs.
 EMIT_ORDER = [
-    "Department", "Supplier", "Barang", "Gudang", "Bank", "Category", "Satuan",
-    "PO", "SubPO", "LPB", "SubLPB", "VoucherAP", "SubVoucherAP",
+    "Dept", "Supplier", "Barang", "Gudang", "Bank", "Category", "Satuan",
+    "PO", "SubPO", "LPB", "SubLPB", "VoucherAP", "SubVoucherAP", "SubBayar",
 ]
 
 
