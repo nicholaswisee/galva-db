@@ -108,7 +108,7 @@ GTC-SERVER (prod)                galva-mssql (local)
   │  Supplier, PO,   │           │  schema.sql      │
   │  LPB, VoucherAP  │  extract  │  (empty)         │
   │  Sub* tables     │ ────────► │  + seed-from-    │
-  │  Department (0%) │  scripts/ │    prod.sql      │
+  │  Dept (161 rows) │  scripts/ │    prod.sql      │
   │  Barang (0%)     │  extract- │  (279 rows)      │
   └──────────────────┘  from-    └──────────────────┘
                        prod.py
@@ -130,10 +130,10 @@ exactly what changed in prod data.
   0% populated, so there's no reliable Voucher→Payment chain.
 - `SPB` / `SubSPB` (PRs) are not seeded — `PO.Doku_SPPB` is 0%
   populated in prod, so the PR→PO link can't be walked.
-- Stub rows are synthesized for any `Kode_Dept` or `Kode_Brg` value
-  referenced by the selected transactions but missing from prod's
-  Department / Barang master (those masters are 0% populated in
-  XTechnologies2018IN).
+- Stub rows are synthesized for any `Kode_Brg` value referenced by the
+  selected transactions but missing from prod's Barang master (that
+  master is 0% populated in XTechnologies2018IN). `Kode_Dept` values
+  resolve against prod's `dbo.Dept` (161 rows).
 
 ## File index
 

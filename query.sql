@@ -14,11 +14,10 @@
 --   SQLTools, select database XTechnologies2018IN, and execute the whole file
 --   (or pick a single section and run with Ctrl+Shift+E).
 --
--- The query was intentionally written to avoid columns that may be
--- absent in some schema versions (Tgl on Sub tables, Doku_PO on
--- SubBayar, NilaiBayar, and the v.Status filter). All sections use
--- only the most fundamental columns (Doku, Kode, Nama, Doku_SPPB,
--- Doku_SPPB / Doku_LPB, Nilai) that exist in every version.
+-- The query uses only the most fundamental columns (Doku, Kode, Nama,
+-- Doku_SPPB, Doku_LPB, Nilai) common to both the local Docker mockup
+-- and the prod XTechnologies2018IN schema. VoucherAP uses TglDoku
+-- (prod-faithful) and STS, no Kode_Bank/Status (neither exists in prod).
 -- ============================================================
 
 USE XTechnologies2018IN;
@@ -44,11 +43,11 @@ SELECT PKbas, Kode, Nama, Kode_Dept, MTU AS Currency, Syarat AS TermsDays,
 FROM Supplier
 ORDER BY Kode;
 
--- 1.2 Departments
+-- 1.2 Departments (prod: dbo.Dept, id_dept IDENTITY PK, Kode natural key)
 PRINT '========== DEPARTMENTS ==========';
-SELECT *
-FROM Department
-ORDER BY Department.KEY
+SELECT id_dept, Kode, Nama, KodeGTC, KodeEPK
+FROM Dept
+ORDER BY Kode;
 
 -- 1.3 Inventory items
 PRINT '========== INVENTORY ==========';
@@ -150,16 +149,16 @@ ORDER BY l.Tgl DESC, l.Doku;
 
 -- 2.7 AP Vouchers (VoucherAP)
 PRINT '========== AP VOUCHERS (VoucherAP) ==========';
-SELECT v.PKbas, v.Doku, v.Tgl, v.Kode_Supplier, s.Nama AS SupplierName,
-  v.Kode_Dept, v.Kode_Bank, v.Nilai, v.PPn, v.Diskon, v.Misc,
-  v.STS, v.Status, v.Keterangan
+SELECT v.PKbas, v.Doku, v.TglDoku AS Tgl, v.Kode_Supplier, s.Nama AS SupplierName,
+  v.Kode_Dept, v.Nilai, v.PPn, v.Diskon, v.Misc,
+  v.STS, v.Keterangan
 FROM VoucherAP v
   LEFT JOIN Supplier s ON s.Kode = v.Kode_Supplier
-ORDER BY v.Tgl DESC, v.Doku;
+ORDER BY v.TglDoku DESC, v.Doku;
 
 -- 2.8 AP Voucher detail lines
 PRINT '========== VOUCHER DETAIL LINES ==========';
-SELECT v.Doku, v.Tgl, sv.Doku_LPB, sv.NilaiLPB, sv.Nilai
+SELECT v.Doku, v.TglDoku AS Tgl, sv.Doku_LPB, sv.NilaiLPB, sv.Nilai
 FROM SubVoucherAP sv
   INNER JOIN VoucherAP v ON v.Doku = sv.Doku
 ORDER BY v.Doku;

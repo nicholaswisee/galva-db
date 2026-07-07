@@ -110,7 +110,7 @@ docker exec "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd \
   -S localhost -U sa -P "$PASSWORD" -C -h -1 -W \
   -Q "
 USE ErpApMockup;
-SELECT 'Department'   AS TableName, COUNT(*) AS n FROM dbo.Department
+SELECT 'Dept'         AS TableName, COUNT(*) AS n FROM dbo.Dept
 UNION ALL SELECT 'Supplier',   COUNT(*) FROM dbo.Supplier
 UNION ALL SELECT 'Barang',     COUNT(*) FROM dbo.Barang
 UNION ALL SELECT 'Gudang',     COUNT(*) FROM dbo.Gudang

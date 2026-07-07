@@ -12,11 +12,11 @@
 --   Department / Barang / SupplierGroup / A_MASTER_BARANG = 0 rows
 --   (still queried — they exist in the schema and may be populated later)
 --
--- Schema corrections vs. original query.sql:
---   - Department: columns are [code],[description]  (not Kode/Nama)
---   - SPB.Memo   : the column is named [MEMO]      (use brackets to be safe)
---   - VoucherAP  : date column is [TglDoku]        (not Tgl)
---   - VoucherAP  : no [Kode_Bank] / [Status] cols  (use Kode_Dept; STS only)
+-- Schema notes (vs. original query.sql):
+--   - Departments live in dbo.Dept (id_dept IDENTITY PK, Kode natural key)
+--   - SPB.Memo    : the column is named [MEMO]    (use brackets to be safe)
+--   - VoucherAP   : date column is [TglDoku]      (not Tgl)
+--   - VoucherAP   : no [Kode_Bank] / [Status] cols (use Kode_Dept; STS only)
 --
 -- How to run from VS Code (SQLTools):
 --   1. Open this file.
@@ -51,7 +51,7 @@ DECLARE @SinceDate DATE = '2020-01-01';
 -- ===========================================================
 PRINT '========== SCHEMA SELF-CHECK ==========';
 IF OBJECT_ID('dbo.Supplier')        IS NULL PRINT 'MISSING dbo.Supplier';
-IF OBJECT_ID('dbo.Department')      IS NULL PRINT 'MISSING dbo.Department';
+IF OBJECT_ID('dbo.Dept')            IS NULL PRINT 'MISSING dbo.Dept';
 IF OBJECT_ID('dbo.Barang')          IS NULL PRINT 'MISSING dbo.Barang';
 IF OBJECT_ID('dbo.Gudang')          IS NULL PRINT 'MISSING dbo.Gudang';
 IF OBJECT_ID('dbo.Bank')            IS NULL PRINT 'MISSING dbo.Bank';
@@ -76,7 +76,7 @@ PRINT 'Schema check complete. If any MISSING lines printed above, stop.';
 -- ===========================================================
 PRINT '========== TABLE COUNTS ==========';
 SELECT 'Supplier'        AS TableName, COUNT(*) AS Rows_ FROM dbo.Supplier
-UNION ALL SELECT 'Department',      COUNT(*) FROM dbo.Department
+UNION ALL SELECT 'Dept',            COUNT(*) FROM dbo.Dept
 UNION ALL SELECT 'Barang',          COUNT(*) FROM dbo.Barang
 UNION ALL SELECT 'Gudang',          COUNT(*) FROM dbo.Gudang
 UNION ALL SELECT 'Bank',            COUNT(*) FROM dbo.Bank
@@ -108,12 +108,12 @@ SELECT TOP (CASE WHEN @TopN = 0 THEN 2147483647 ELSE @TopN END)
 FROM dbo.Supplier
 ORDER BY Kode;
 
--- 1.2 Departments — 0 rows, columns are [code],[description]
+-- 1.2 Departments — dbo.Dept, id_dept IDENTITY PK, Kode natural key
 PRINT '========== DEPARTMENTS ==========';
 SELECT TOP (CASE WHEN @TopN = 0 THEN 2147483647 ELSE @TopN END)
-  idx, code, description, domain_code, cluster_code, type
-FROM dbo.Department
-ORDER BY code;
+  id_dept, Kode, Nama, KodeGTC, KodeEPK
+FROM dbo.Dept
+ORDER BY Kode;
 
 -- 1.3 Inventory items (Barang) — 0 rows in this DB
 PRINT '========== INVENTORY ==========';

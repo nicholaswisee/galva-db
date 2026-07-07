@@ -21,7 +21,7 @@ DELETE FROM Barang;
 DELETE FROM Gudang;
 DELETE FROM Bank;
 DELETE FROM Supplier;
-DELETE FROM Department;
+DELETE FROM Dept;
 DELETE FROM Category;
 DELETE FROM Satuan;
 DELETE FROM SupplierGroup;
@@ -31,7 +31,7 @@ GO
 -- 1. MASTER DATA
 -- ============================================================
 
-INSERT INTO Department (Kode, Nama) VALUES
+INSERT INTO Dept (Kode, Nama) VALUES
 ('100', 'IT Department'),
 ('200', 'Operations'),
 ('300', 'Finance'),
@@ -220,15 +220,15 @@ GO
 -- ============================================================
 
 SET IDENTITY_INSERT VoucherAP ON;
-INSERT INTO VoucherAP (PKbas, Doku, Tgl, Kode_Supplier, Kode_Dept, Kode_Bank, Nilai, PPn, Diskon, Misc, STS, Status, Keterangan, Kode_Valas, Kurs) VALUES
-(1, '2201JKT999/E/0250', '2024-01-30', 'TLA0030', '100', 'BCA', 15000000, 1500000, 0, 0, '1', 'Open', 'AP Invoice for IT equipment PO 2201JKT999/E/0100', 'Rp.', 1),
-(2, '2201JKT999/E/0251', '2024-02-01', 'TLT0014', '200', 'MANDIRI', 8500000, 850000, 0, 0, '1', 'Open', 'AP Invoice for office supplies PO 2201JKT999/E/0101', 'Rp.', 1),
-(3, '2202JKT999/E/0252', '2024-02-18', 'TLE0005', '400', 'BCA', 5000000, 500000, 0, 0, '1', 'Open', 'AP Invoice for toner stock PO 2202JKT999/E/0102', 'Rp.', 1),
-(4, '2202JKT999/E/0253', '2024-02-25', 'TLS0006', '500', 'BNI', 12000000, 1200000, 0, 0, '1', 'Open', 'AP Invoice for shelving PO 2202JKT999/E/0103', 'Rp.', 1),
-(5, '2203JKT999/E/0254', '2024-03-18', 'TLT0002', '600', 'BRI', 7500000, 750000, 0, 0, '1', 'Open', 'AP Invoice for demo equipment PO 2203JKT999/E/0104', 'Rp.', 1),
-(6, '2203JKT999/E/0255', '2024-03-22', 'TLT0014', '200', 'MANDIRI', 3000000, 300000, 0, 0, '1', 'Paid', 'AP Invoice for stationery PO 2203JKT999/E/0105', 'Rp.', 1),
-(7, '2203JKT999/E/0256', '2024-04-08', 'TLC0001', '400', 'BCA', 22000000, 2200000, 0, 0, '1', 'Open', 'AP Invoice for AC units PO 2203JKT999/E/0106', 'Rp.', 1),
-(8, '2203JKT999/E/0257', '2024-04-20', 'TLH0001', '100', 'BNI', 9500000, 950000, 0, 0, '0', 'Open', 'AP Invoice for UPS units PO 2204JKT999/E/0107', 'Rp.', 1);
+INSERT INTO VoucherAP (PKbas, Doku, TglDoku, Kode_Supplier, Kode_Dept, Nilai, PPn, Diskon, Misc, STS, Keterangan, Kode_Valas, Kurs) VALUES
+(1, '2201JKT999/E/0250', '2024-01-30', 'TLA0030', '100', 15000000, 1500000, 0, 0, '1', 'AP Invoice for IT equipment PO 2201JKT999/E/0100', 'Rp.', 1),
+(2, '2201JKT999/E/0251', '2024-02-01', 'TLT0014', '200', 8500000, 850000, 0, 0, '1', 'AP Invoice for office supplies PO 2201JKT999/E/0101', 'Rp.', 1),
+(3, '2202JKT999/E/0252', '2024-02-18', 'TLE0005', '400', 5000000, 500000, 0, 0, '1', 'AP Invoice for toner stock PO 2202JKT999/E/0102', 'Rp.', 1),
+(4, '2202JKT999/E/0253', '2024-02-25', 'TLS0006', '500', 12000000, 1200000, 0, 0, '1', 'AP Invoice for shelving PO 2202JKT999/E/0103', 'Rp.', 1),
+(5, '2203JKT999/E/0254', '2024-03-18', 'TLT0002', '600', 7500000, 750000, 0, 0, '1', 'AP Invoice for demo equipment PO 2203JKT999/E/0104', 'Rp.', 1),
+(6, '2203JKT999/E/0255', '2024-03-22', 'TLT0014', '200', 3000000, 300000, 0, 0, '1', 'AP Invoice for stationery PO 2203JKT999/E/0105', 'Rp.', 1),
+(7, '2203JKT999/E/0256', '2024-04-08', 'TLC0001', '400', 22000000, 2200000, 0, 0, '1', 'AP Invoice for AC units PO 2203JKT999/E/0106', 'Rp.', 1),
+(8, '2203JKT999/E/0257', '2024-04-20', 'TLH0001', '100', 9500000, 950000, 0, 0, '0', 'AP Invoice for UPS units PO 2204JKT999/E/0107', 'Rp.', 1);
 SET IDENTITY_INSERT VoucherAP OFF;
 
 INSERT INTO SubVoucherAP (Doku, Tgl, Doku_LPB, Doku_PO, NilaiLPB, Nilai, Diskon, PPn, Kode_Valas, Kurs, NoUrut, Kode_Supplier) VALUES
@@ -256,12 +256,12 @@ INSERT INTO Bayar (PKindex, Doku, Tgl, Kode_Supplier, Keterangan, NilaiKas, Nila
 (5, 'PV-2024-0005', '2024-04-25', 'TLS0006', 'Payment for shelving invoice', 13200000, 0, '1', 'Rp.', 1, 'Transfer');
 SET IDENTITY_INSERT Bayar OFF;
 
-INSERT INTO SubBayar (Doku, Tgl, Doku_LPB, Doku_PO, Doku_Voucher, Kode_Supplier, Nilai, NilaiBayar, Kode_Valas, Kurs, NoUrut, Keterangan) VALUES
-('PV-2024-0001', '2024-03-25', '2203JKT999/L/0205', '2203JKT999/E/0105', '2203JKT999/E/0255', 'TLT0014', 3000000, 3300000, 'Rp.', 1, 1, 'Stationery payment'),
-('PV-2024-0002', '2024-04-10', '2202JKT999/L/0202', '2202JKT999/E/0102', '2202JKT999/E/0252', 'TLE0005', 2500000, 2750000, 'Rp.', 1, 1, 'Toner partial payment'),
-('PV-2024-0003', '2024-04-15', '2201JKT999/L/0200', '2201JKT999/E/0100', '2201JKT999/E/0250', 'TLA0030', 15000000, 16500000, 'Rp.', 1, 1, 'IT equipment full payment'),
-('PV-2024-0004', '2024-04-20', '2203JKT999/L/0204', '2203JKT999/E/0104', '2203JKT999/E/0254', 'TLT0002', 7500000, 8250000, 'Rp.', 1, 1, 'Demo equipment payment'),
-('PV-2024-0005', '2024-04-25', '2202JKT999/L/0203', '2202JKT999/E/0103', '2202JKT999/E/0253', 'TLS0006', 12000000, 13200000, 'Rp.', 1, 1, 'Shelving full payment');
+INSERT INTO SubBayar (Doku, Tgl, Kode_Supplier, Doku_LPB, Giro, Nilai, TotalNilai, Kode_Valas, Kurs, NoUrut, Keterangan, Kode_Bank) VALUES
+('PV-2024-0001', '2024-03-25', 'TLT0014', '2203JKT999/L/0205', NULL, 3000000, 3300000, 'Rp.', 1, 1, 'Stationery payment', 'MANDIRI'),
+('PV-2024-0002', '2024-04-10', 'TLE0005', '2202JKT999/L/0202', NULL, 2500000, 2750000, 'Rp.', 1, 1, 'Toner partial payment', 'BCA'),
+('PV-2024-0003', '2024-04-15', 'TLA0030', '2201JKT999/L/0200', NULL, 15000000, 16500000, 'Rp.', 1, 1, 'IT equipment full payment', 'BCA'),
+('PV-2024-0004', '2024-04-20', 'TLT0002', '2203JKT999/L/0204', NULL, 7500000, 8250000, 'Rp.', 1, 1, 'Demo equipment payment', 'BRI'),
+('PV-2024-0005', '2024-04-25', 'TLS0006', '2202JKT999/L/0203', NULL, 12000000, 13200000, 'Rp.', 1, 1, 'Shelving full payment', 'BNI');
 
 GO
 
