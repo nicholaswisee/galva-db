@@ -71,10 +71,8 @@ fi
 if [[ $DO_RESET -eq 1 ]]; then
   echo
   echo "============================================================"
-  echo "Step 2/3: Reset ErpApMockup database"
+  echo "Step 2/4: Reset ErpApMockup database"
   echo "============================================================"
-  # Drop and re-create from the schema file. We bind-mount the working
-  # directory into /tmp so the container can read schema.sql.
   docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd \
     -S localhost -U sa -P "$PASSWORD" -C -h -1 -W \
     -Q "
@@ -84,6 +82,7 @@ BEGIN
   ALTER DATABASE ErpApMockup SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
   DROP DATABASE ErpApMockup;
 END;
+CREATE DATABASE ErpApMockup;
 "
   echo "Re-creating from schema.sql..."
   docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd \
@@ -91,10 +90,19 @@ END;
     -Q "$(cat schema.sql | tr -d '\r')"
 fi
 
-# ---- 3. Apply seed SQL ----
+# ---- 3. Apply pending migrations ----
+# Existing containers may have been initialized before schema.sql added
+# columns such as LPB.Doku_PCF. Migrations bring those online idempotently.
 echo
 echo "============================================================"
-echo "Step 3/3: Apply $SEED_SQL to container '$CONTAINER'"
+echo "Step 3/4: Apply pending migrations"
+echo "============================================================"
+./migrate.sh
+
+# ---- 4. Apply seed SQL ----
+echo
+echo "============================================================"
+echo "Step 4/4: Apply $SEED_SQL to container '$CONTAINER'"
 echo "============================================================"
 # Strip CRLF and pipe to sqlcmd
 docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd \

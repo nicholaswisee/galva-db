@@ -26,6 +26,9 @@ docker compose up -d
 docker compose ps      # STATUS should show "healthy" after ~20-40s
 docker compose logs -f mssql   # tail startup; look for "Recovery is complete"
 
+# 3. Apply migrations (idempotent; run after first init and after pulling updates)
+./migrate.sh
+
 # 3. Connect from VS Code
 #    Install extension: "MSSQL" by Microsoft (ms-mssql.mssql)
 #    Add connection:
@@ -47,7 +50,16 @@ docker compose logs -f
 docker compose exec mssql /opt/mssql-tools18/bin/sqlcmd \
   -S localhost -U sa -P "$(grep MSSQL_SA_PASSWORD .env | cut -d= -f2)" -C
 
-# Re-apply schema (use after editing schema.sql, or if init didn't run)
+# Apply pending migrations to an existing container
+./migrate.sh
+
+# Re-apply schema + synthetic seed (use after editing schema.sql, or if init didn't run)
+./seed.sh
+
+# Wipe data and start fresh (DESTRUCTIVE)
+docker compose down -v
+docker compose up -d
+./migrate.sh   # schema.sql already ran; migrations finish the job
 ./seed.sh
 
 # Stop (keeps data)
@@ -141,8 +153,10 @@ exactly what changed in prod data.
 | ------------------------------ | ------ | -------------------------------------------------------------------------------------------------- |
 | `docker-compose.yml`           | Config | Service definition; `schema.sql` is bind-mounted into the initdb dir.                              |
 | `schema.sql`                   | T-SQL  | Full schema for `ErpApMockup`. Auto-runs on first container boot.                                  |
-| `seed.sh`                      | Bash   | Re-apply `schema.sql` to a running container (use after editing the schema or if init didn't run). |
-| `seed-from-prod.sh`            | Bash   | Orchestrator: extract from prod, write `seed-from-prod.sql`, optionally reset and apply.           |
+| `migrations/`                  | T-SQL  | Incremental, idempotent migrations for existing containers (e.g., adding `Doku_PCF`).              |
+| `migrate.sh`                   | Bash   | Apply all `migrations/*.sql` scripts in sorted order to the running container.                     |
+| `seed.sh`                      | Bash   | Apply pending migrations, then re-apply `schema.sql` and synthetic seed data.                      |
+| `seed-from-prod.sh`            | Bash   | Orchestrator: extract from prod, write `seed-from-prod.sql`, run migrations, optionally reset and apply. |
 | `seed-from-prod.sql`           | T-SQL  | **Auto-generated** seed data. Don't edit; regenerate via the script.                               |
 | `scripts/extract-from-prod.py` | Python | The extractor. Schema-aware, transforms source columns to match local schema, synthesizes stubs.   |
 | `query.sql`                    | T-SQL  | Section-by-section reports. Schema-agnostic.                                                       |
@@ -171,8 +185,11 @@ checked in.
 
 - **Init runs ONCE.** `/docker-entrypoint-initdb.d/*.sql` only executes
   on a fresh data volume. Editing `schema.sql` after first start won't
-  auto-reapply — use `./seed.sh`. For a clean slate:
+  auto-reapply — use `./seed.sh` or `./migrate.sh`. For a clean slate:
   `docker compose down -v && docker compose up -d`.
+- **Migrations are incremental.** After first init, apply new schema
+  changes with `./migrate.sh`. Keep scripts in `migrations/` idempotent
+  so they can be re-run safely.
 - **`GO` must be on its own line.** sqlcmd 18+ on Linux does not
   recognize inline `; GO` as a batch separator. The schema is already
   formatted correctly.
