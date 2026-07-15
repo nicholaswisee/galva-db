@@ -1299,7 +1299,7 @@ CREATE TABLE [dbo].[SubVoucherAP](
 	[Doku_LPB] [nvarchar](50) NULL,
 	[Doku_PO] [nvarchar](50) NULL,
 	[Doku_PCF] [nvarchar](50) NULL,
-	[TipeBiaya] [nvarchar](20) NULL,
+	[TipeBiaya] [nvarchar](10) NULL,
 	[APRef] [nvarchar](50) NULL,
 	[InvoiceNo] [nvarchar](50) NULL,
 	[TglInvoice] [smalldatetime] NULL,
@@ -1329,6 +1329,16 @@ CREATE TABLE [dbo].[SubVoucherAP](
 ) ON [PRIMARY]
 
 GO
+
+ALTER TABLE [dbo].[SubVoucherAP]
+    ADD CONSTRAINT [CK_SubVoucherAP_TipeBiaya]
+    CHECK ([TipeBiaya] IS NULL OR [TipeBiaya] IN ('LPB', 'PO'));
+GO
+
+CREATE NONCLUSTERED INDEX [IX_SubVoucherAP_TipeBiaya_Doku]
+    ON [dbo].[SubVoucherAP] ([TipeBiaya], [Doku]);
+GO
+
 /****** Object:  Table [dbo].[Supplier]    Script Date: 6/26/2026 3:26:09 PM ******/
 SET ANSI_NULLS ON
 GO
@@ -1757,6 +1767,15 @@ CREATE TABLE [dbo].[VoucherAP](
  CONSTRAINT [PK_VoucherAP] PRIMARY KEY CLUSTERED
  ([PKbas] ASC) WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF, IGNORE_DUP_KEY=OFF, ALLOW_ROW_LOCKS=ON, ALLOW_PAGE_LOCKS=ON) ON [PRIMARY]
 ) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[VoucherAP]
+    ADD CONSTRAINT [CK_VoucherAP_TipeBiaya]
+    CHECK ([TipeBiaya] IS NULL OR [TipeBiaya] IN ('LPB', 'PO'));
+GO
+
+CREATE NONCLUSTERED INDEX [IX_VoucherAP_TipeBiaya_Doku]
+    ON [dbo].[VoucherAP] ([TipeBiaya], [Doku]);
 GO
 
 -- SubBayar (prod-faithful: Doku_Faktur/Giro/Kode_Bank FX-payment columns)
