@@ -189,6 +189,8 @@ SCHEMA: dict[str, list[tuple[str, str]]] = {
     "VoucherAP": [
         # Local schema is now prod-faithful: TglDoku (not Tgl), Doku_LPB,
         # Doku_PO, TipeBiaya all present locally. No column aliases needed.
+        # Import-invoice header fields (NOPEN, AWB_BL, Doku_PCF) are included;
+        # if prod uses different names, adjust the left side of the tuple.
         ("PKbas", "PKbas"),
         ("Doku", "Doku"),
         ("TglDoku", "TglDoku"),
@@ -196,6 +198,10 @@ SCHEMA: dict[str, list[tuple[str, str]]] = {
         ("Kode_Dept", "Kode_Dept"),
         ("Doku_LPB", "Doku_LPB"),
         ("Doku_PO", "Doku_PO"),
+        ("Doku_PCF", "Doku_PCF"),
+        ("NOPEN", "NOPEN"),
+        ("TglNopen", "TglNopen"),
+        ("AWB_BL", "AWB_BL"),
         ("TipeBiaya", "TipeBiaya"),
         ("Syarat", "Syarat"),
         ("TglJatuhTempo", "TglJatuhTempo"),
@@ -229,11 +235,18 @@ SCHEMA: dict[str, list[tuple[str, str]]] = {
         ("Tgl", "Tgl"),
         ("Doku_LPB", "Doku_LPB"),
         ("Doku_PO", "Doku_PO"),
+        ("Doku_PCF", "Doku_PCF"),
+        ("TipeBiaya", "TipeBiaya"),
+        ("APRef", "APRef"),
+        ("InvoiceNo", "InvoiceNo"),
+        ("TglInvoice", "TglInvoice"),
         ("NilaiLPB", "NilaiLPB"),
         ("Nilai", "Nilai"),
         ("PPn", "PPn"),
         ("Diskon", "Diskon"),
         ("Misc", "Misc"),
+        ("Doku_FP", "Doku_FP"),
+        ("Tgl_FP", "Tgl_FP"),
         ("Kode_Supplier", "Kode_Supplier"),
         ("Kode_Valas", "Kode_Valas"),
         ("Kurs", "Kurs"),

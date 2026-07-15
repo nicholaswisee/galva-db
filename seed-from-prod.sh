@@ -18,6 +18,12 @@
 #   ./seed-from-prod.sh --n-pos 50      # more POs
 #   ./seed-from-prod.sh --dry-run       # extract only, don't apply
 #   ./seed-from-prod.sh --reset         # nuke the DB and re-init from schema first
+#
+# Note on import-invoice columns:
+#   scripts/extract-from-prod.py already maps the new VoucherAP/SubVoucherAP
+#   columns (NOPEN, TglNopen, AWB_BL, Doku_PCF, APRef, InvoiceNo, TglInvoice,
+#   Doku_FP, Tgl_FP). Re-run this script from a host with GTC-SERVER access to
+#   regenerate seed-from-prod.sql with those columns populated.
 # ============================================================================
 set -euo pipefail
 cd "$(dirname "$0")"

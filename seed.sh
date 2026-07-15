@@ -37,15 +37,8 @@ if [ "$DO_RESET" -eq 1 ]; then
   echo "Resetting ErpApMockup database on container '$CONTAINER'..."
   docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd \
     -S localhost -U sa -P "$PASSWORD" -C -h -1 -W \
-    -Q "
-USE master;
-IF DB_ID('ErpApMockup') IS NOT NULL
-BEGIN
-  ALTER DATABASE ErpApMockup SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-  DROP DATABASE ErpApMockup;
-END;
-CREATE DATABASE ErpApMockup;
-"
+    -Q "USE master; ALTER DATABASE ErpApMockup SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE ErpApMockup;" \
+    2>/dev/null || true
   echo "Re-applying schema.sql..."
   docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd \
     -S localhost -U sa -P "$PASSWORD" -C -h -1 -W \
@@ -60,9 +53,8 @@ echo "Applying migrations..."
 if [ "$RUN_SEED" -eq 1 ]; then
   echo
   echo "Applying seed-synthetic.sql..."
-  docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd \
-    -S localhost -U sa -P "$PASSWORD" -C -h -1 -W \
-    -i /seed-synthetic.sql
+  tr -d '\r' < seed-synthetic.sql | docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd \
+    -S localhost -U sa -P "$PASSWORD" -C -h -1 -W
 fi
 
 echo

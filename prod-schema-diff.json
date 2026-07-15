@@ -1,0 +1,51 @@
+{
+  "VoucherAP": [
+    {
+      "column_name": "NOPEN",
+      "data_type": "nvarchar",
+      "max_length": 50
+    },
+    {
+      "column_name": "TglNopen",
+      "data_type": "smalldatetime",
+      "max_length": 0
+    },
+    {
+      "column_name": "AWB_BL",
+      "data_type": "nvarchar",
+      "max_length": 50
+    },
+    {
+      "column_name": "Doku_PCF",
+      "data_type": "nvarchar",
+      "max_length": 50
+    }
+  ],
+  "SubVoucherAP": [
+    {
+      "column_name": "APRef",
+      "data_type": "nvarchar",
+      "max_length": 50
+    },
+    {
+      "column_name": "InvoiceNo",
+      "data_type": "nvarchar",
+      "max_length": 50
+    },
+    {
+      "column_name": "TglInvoice",
+      "data_type": "smalldatetime",
+      "max_length": 0
+    },
+    {
+      "column_name": "Doku_FP",
+      "data_type": "nvarchar",
+      "max_length": 50
+    },
+    {
+      "column_name": "Tgl_FP",
+      "data_type": "smalldatetime",
+      "max_length": 0
+    }
+  ]
+}
