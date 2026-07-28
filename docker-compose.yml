@@ -13,10 +13,8 @@ services:
       # Persistent data — survives `docker compose stop` / `down` (NOT `down -v`)
       - mssql_data:/var/opt/mssql
       # Seed scripts — auto-run ONLY on first init (empty data volume).
-      # Re-seed: `npm run db:reset` (or `docker compose down -v && up`).
+      # Re-seed: `docker compose down -v && up` or `./seed.sh --reset`.
       - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      # Migrations — applied idempotently by ./migrate.sh after first init.
-      - ./migrations:/migrations:ro
     healthcheck:
       # /opt/mssql-tools18/bin/sqlcmd ships inside the image; -C trusts self-signed cert.
       test:
