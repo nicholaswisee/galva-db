@@ -3,13 +3,13 @@
 #
 # Background:
 #   SQL Server's /docker-entrypoint-initdb.d only runs on a FRESH data volume.
-#   Once a container has data, schema changes must be applied via the
-#   incremental migrations in ./migrations/. This script applies those
-#   migrations and optionally re-seeds synthetic data.
+#   Once a container has data, schema changes must be applied by resetting
+#   the volume or by using your own ALTER scripts. This script resets the
+#   DB from schema.sql and optionally re-seeds synthetic data.
 #
 # Usage:
-#   ./seed.sh              # apply migrations + synthetic seed data
-#   ./seed.sh --no-seed    # apply migrations only
+#   ./seed.sh              # re-apply schema.sql + synthetic seed data
+#   ./seed.sh --no-seed    # re-apply schema.sql only
 #   ./seed.sh --reset      # DROP the DB, re-init from schema.sql, then seed
 
 set -euo pipefail
@@ -45,15 +45,10 @@ if [ "$DO_RESET" -eq 1 ]; then
     -i /docker-entrypoint-initdb.d/01-schema.sql
 fi
 
-# Always run migrations so existing containers pick up schema changes
-# that were added after their data volume was initialized.
-echo "Applying migrations..."
-./migrate.sh
-
 if [ "$RUN_SEED" -eq 1 ]; then
   echo
-  echo "Applying seed-synthetic.sql..."
-  tr -d '\r' < seed-synthetic.sql | docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd \
+  echo "Applying seeds/seed-synthetic.sql..."
+  tr -d '\r' < seeds/seed-synthetic.sql | docker exec -i "$CONTAINER" /opt/mssql-tools18/bin/sqlcmd \
     -S localhost -U sa -P "$PASSWORD" -C -h -1 -W
 fi
 
