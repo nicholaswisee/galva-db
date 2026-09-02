@@ -7,14 +7,16 @@ USE ErpApMockup;
 GO
 
 -- Clear existing synthetic data (keep real prod extracts if any)
-DELETE FROM SubBayar;
-DELETE FROM Bayar;
+DELETE FROM Hiapt02;
+DELETE FROM Hiapt06;
 DELETE FROM SubVoucherAP;
 DELETE FROM VoucherAP;
 DELETE FROM SubLPB;
 DELETE FROM LPB;
 DELETE FROM SubPO;
 DELETE FROM PO;
+DELETE FROM SubPOSem;
+DELETE FROM POSem;
 DELETE FROM SubSPB;
 DELETE FROM SPB;
 DELETE FROM SaldoAP;
@@ -43,7 +45,7 @@ INSERT INTO Dept (Kode, Nama) VALUES
 ('700', 'HRD');
 
 SET IDENTITY_INSERT Supplier ON;
-INSERT INTO Supplier (PKbas, Kode, Nama, Kode_Dept, Alamat1, Kota, NPWP, PKP, Syarat, MTU, Aktif, Status, SupGroupName, Email) VALUES
+INSERT INTO Supplier (id_supplier, Kode, Nama, Kode_Dept, Alamat1, Kota, NPWP, PKP, Syarat, MTU, Aktif, Status, SupGroupName, Email) VALUES
 (1, 'TLA0030', 'PT ADAKOM INTERNATIONAL TECHNOLOGY', '400', 'PERKANTORAN CBD PLUIT BLOK S-8 LT 3', 'JAKARTA UTARA 14440', '027919315044000', 'PKP', 30, 'Rp.', 1, 'A', 'Electronics', 'adakom@example.com'),
 (2, 'TLE0005', 'PT ELSISCOM PRIMA KARYA', '400', 'GALVA BUILDING 4TH FLOOR', 'JAKARTA', '01.402.120.8-073.000', 'PKP', 90, 'Rp.', 1, 'A', 'Services', 'elsiscom@example.com'),
 (3, 'TLS0006', 'SL SOLUTION', '400', 'KAMAL RAYA CITY RESORT CENGKARENG', 'JAKARTA', '', 'Non-PKP', 7, 'Rp.', 1, 'A', 'Software', 'slsolution@example.com'),
@@ -160,32 +162,56 @@ INSERT INTO SubSPB (Doku, Tgl, Kode_Brg, Kode_Gudang, Alias, Jumlah, Harga, Nila
 GO
 
 -- ============================================================
--- 3. PURCHASE ORDERS (PO)
+-- 3. PURCHASE ORDERS (POSem)
 -- ============================================================
 
+SET IDENTITY_INSERT POSem ON;
+INSERT INTO POSem (id_posem, Doku, Tgl, Kode_Supplier, Kode_dept, Nilai, PPN, Diskon, STS, Memo, Kode_Valas, Kurs, Syarat, DPPNilaiLain) VALUES
+(1, '2201JKT999/E/0100-DRAFT', '2024-01-18', 'TLA0030', '100', 15000000, 1500000, 0, '1', 'Draft PO for IT equipment refresh Q1', 'Rp.', 1, 30, 15000000),
+(2, '2201JKT999/E/0101-DRAFT', '2024-01-22', 'TLT0014', '200', 8500000, 850000, 0, '1', 'Draft office supplies procurement', 'Rp.', 1, 0, 8500000),
+(3, '2202JKT999/E/0102-DRAFT', '2024-02-12', 'TLE0005', '400', 5000000, 500000, 0, '1', 'Draft printer toner stock order', 'Rp.', 1, 90, 5000000),
+(4, '2202JKT999/E/0103-DRAFT', '2024-02-18', 'TLS0006', '500', 12000000, 1200000, 0, '1', 'Draft warehouse shelving order', 'Rp.', 1, 7, 12000000),
+(5, '2203JKT999/E/0104-DRAFT', '2024-03-12', 'TLT0002', '600', 7500000, 750000, 0, '1', 'Draft sales demo equipment order', 'Rp.', 1, 120, 7500000),
+(6, '2203JKT999/E/0105-DRAFT', '2024-03-18', 'TLT0014', '200', 3000000, 300000, 0, '1', 'Draft stationery bulk order', 'Rp.', 1, 0, 3000000),
+(7, '2203JKT999/E/0106-DRAFT', '2024-04-02', 'TLC0001', '400', 22000000, 2200000, 0, '1', 'Draft AC units order', 'Rp.', 1, 30, 22000000),
+(8, '2204JKT999/E/0107-DRAFT', '2024-04-15', 'TLH0001', '100', 9500000, 950000, 0, '0', 'Draft backup UPS units order', 'Rp.', 1, 30, 9500000);
+SET IDENTITY_INSERT POSem OFF;
+
+INSERT INTO SubPOSem (Doku, Tgl, Kode_Brg, Kode_Dept, Kode_Gudang, Alias, Jumlah, Harga, Total, Diskon, PPN, Kode_Valas) VALUES
+('2201JKT999/E/0100-DRAFT', '2024-01-18', 'LAPTOP-HP-01', '100', 'WH-JKT', 'HP EliteBook 840', 5, 1500000, 7500000, 0, 750000, 'Rp.'),
+('2201JKT999/E/0100-DRAFT', '2024-01-18', 'MONITOR-LG-24', '100', 'WH-JKT', 'LG 24-inch Monitor', 5, 1500000, 7500000, 0, 750000, 'Rp.'),
+('2201JKT999/E/0101-DRAFT', '2024-01-22', 'DESK-OF-01', '200', 'WH-JKT', 'Office Desk', 10, 500000, 5000000, 0, 500000, 'Rp.'),
+('2201JKT999/E/0101-DRAFT', '2024-01-22', 'CHAIR-OF-01', '200', 'WH-JKT', 'Ergonomic Chair', 10, 350000, 3500000, 0, 350000, 'Rp.'),
+('2202JKT999/E/0102-DRAFT', '2024-02-12', 'TONER-HP-05A', '400', 'WH-JKT', 'HP 05A Toner', 20, 250000, 5000000, 0, 500000, 'Rp.'),
+('2202JKT999/E/0103-DRAFT', '2024-02-18', 'SHELF-IND-01', '500', 'WH-BDG', 'Industrial Shelving', 15, 800000, 12000000, 0, 1200000, 'Rp.'),
+('2203JKT999/E/0104-DRAFT', '2024-03-12', 'PROJECTOR-EP-01', '600', 'WH-JKT', 'Epson Projector', 3, 2500000, 7500000, 0, 750000, 'Rp.'),
+('2203JKT999/E/0105-DRAFT', '2024-03-18', 'STATIONERY-01', '200', 'WH-JKT', 'Stationery Set', 50, 60000, 3000000, 0, 300000, 'Rp.'),
+('2203JKT999/E/0106-DRAFT', '2024-04-02', 'AIRCON-PAN-01', '400', 'WH-JKT', 'Panasonic 1PK AC', 10, 2200000, 22000000, 0, 2200000, 'Rp.'),
+('2204JKT999/E/0107-DRAFT', '2024-04-15', 'UPS-APC-01', '100', 'WH-JKT', 'APC UPS 650VA', 10, 950000, 9500000, 0, 950000, 'Rp.');
+
 SET IDENTITY_INSERT PO ON;
-INSERT INTO PO (id_po, Doku, Tgl, Kode_Supplier, Kode_dept, Nilai, PPN, Diskon, STS, Memo, Kode_Valas, Kurs, Syarat, DPPNilaiLain) VALUES
-(1, '2201JKT999/E/0100', '2024-01-18', 'TLA0030', '100', 15000000, 1500000, 0, '1', 'PO for IT equipment refresh Q1', 'Rp.', 1, 30, 15000000),
-(2, '2201JKT999/E/0101', '2024-01-22', 'TLT0014', '200', 8500000, 850000, 0, '1', 'Office supplies procurement', 'Rp.', 1, 0, 8500000),
-(3, '2202JKT999/E/0102', '2024-02-12', 'TLE0005', '400', 5000000, 500000, 0, '1', 'Printer toner stock order', 'Rp.', 1, 90, 5000000),
-(4, '2202JKT999/E/0103', '2024-02-18', 'TLS0006', '500', 12000000, 1200000, 0, '1', 'Warehouse shelving PO', 'Rp.', 1, 7, 12000000),
-(5, '2203JKT999/E/0104', '2024-03-12', 'TLT0002', '600', 7500000, 750000, 0, '1', 'Sales demo equipment PO', 'Rp.', 1, 120, 7500000),
-(6, '2203JKT999/E/0105', '2024-03-18', 'TLT0014', '200', 3000000, 300000, 0, '1', 'Stationery bulk order', 'Rp.', 1, 0, 3000000),
-(7, '2203JKT999/E/0106', '2024-04-02', 'TLC0001', '400', 22000000, 2200000, 0, '1', 'AC units for new wing', 'Rp.', 1, 30, 22000000),
-(8, '2204JKT999/E/0107', '2024-04-15', 'TLH0001', '100', 9500000, 950000, 0, '0', 'Backup UPS units PO', 'Rp.', 1, 30, 9500000);
+INSERT INTO PO (id_po, Doku, Tgl, Kode_Supplier, Doku_POSem, Kode_dept, Nilai, PPN, Diskon, STS, Memo, Kode_Valas, Kurs, Syarat, DPPNilaiLain) VALUES
+(1, '2201JKT999/E/0100', '2024-01-18', 'TLA0030', '2201JKT999/E/0100-DRAFT', '100', 15000000, 1500000, 0, '1', 'Confirmed IT equipment order', 'Rp.', 1, 30, 15000000),
+(2, '2201JKT999/E/0101', '2024-01-22', 'TLT0014', '2201JKT999/E/0101-DRAFT', '200', 8500000, 850000, 0, '1', 'Confirmed office supplies order', 'Rp.', 1, 0, 8500000),
+(3, '2202JKT999/E/0102', '2024-02-12', 'TLE0005', '2202JKT999/E/0102-DRAFT', '400', 5000000, 500000, 0, '1', 'Confirmed printer toner order', 'Rp.', 1, 90, 5000000),
+(4, '2202JKT999/E/0103', '2024-02-18', 'TLS0006', '2202JKT999/E/0103-DRAFT', '500', 12000000, 1200000, 0, '1', 'Confirmed warehouse shelving order', 'Rp.', 1, 7, 12000000),
+(5, '2203JKT999/E/0104', '2024-03-12', 'TLT0002', '2203JKT999/E/0104-DRAFT', '600', 7500000, 750000, 0, '1', 'Confirmed sales demo equipment order', 'Rp.', 1, 120, 7500000),
+(6, '2203JKT999/E/0105', '2024-03-18', 'TLT0014', '2203JKT999/E/0105-DRAFT', '200', 3000000, 300000, 0, '1', 'Confirmed stationery order', 'Rp.', 1, 0, 3000000),
+(7, '2203JKT999/E/0106', '2024-04-02', 'TLC0001', '2203JKT999/E/0106-DRAFT', '400', 22000000, 2200000, 0, '1', 'Confirmed AC units order', 'Rp.', 1, 30, 22000000),
+(8, '2204JKT999/E/0107', '2024-04-15', 'TLH0001', '2204JKT999/E/0107-DRAFT', '100', 9500000, 950000, 0, '0', 'Pending backup UPS confirmation', 'Rp.', 1, 30, 9500000);
 SET IDENTITY_INSERT PO OFF;
 
-INSERT INTO SubPO (Doku, Tgl, Kode_Brg, Kode_Dept, Kode_Gudang, Alias, Jumlah, Harga, Total, Diskon, PPN, Kode_Valas) VALUES
-('2201JKT999/E/0100', '2024-01-18', 'LAPTOP-HP-01', '100', 'WH-JKT', 'HP EliteBook 840', 5, 1500000, 7500000, 0, 750000, 'Rp.'),
-('2201JKT999/E/0100', '2024-01-18', 'MONITOR-LG-24', '100', 'WH-JKT', 'LG 24-inch Monitor', 5, 1500000, 7500000, 0, 750000, 'Rp.'),
-('2201JKT999/E/0101', '2024-01-22', 'DESK-OF-01', '200', 'WH-JKT', 'Office Desk', 10, 500000, 5000000, 0, 500000, 'Rp.'),
-('2201JKT999/E/0101', '2024-01-22', 'CHAIR-OF-01', '200', 'WH-JKT', 'Ergonomic Chair', 10, 350000, 3500000, 0, 350000, 'Rp.'),
-('2202JKT999/E/0102', '2024-02-12', 'TONER-HP-05A', '400', 'WH-JKT', 'HP 05A Toner', 20, 250000, 5000000, 0, 500000, 'Rp.'),
-('2202JKT999/E/0103', '2024-02-18', 'SHELF-IND-01', '500', 'WH-BDG', 'Industrial Shelving', 15, 800000, 12000000, 0, 1200000, 'Rp.'),
-('2203JKT999/E/0104', '2024-03-12', 'PROJECTOR-EP-01', '600', 'WH-JKT', 'Epson Projector', 3, 2500000, 7500000, 0, 750000, 'Rp.'),
-('2203JKT999/E/0105', '2024-03-18', 'STATIONERY-01', '200', 'WH-JKT', 'Stationery Set', 50, 60000, 3000000, 0, 300000, 'Rp.'),
-('2203JKT999/E/0106', '2024-04-02', 'AIRCON-PAN-01', '400', 'WH-JKT', 'Panasonic 1PK AC', 10, 2200000, 22000000, 0, 2200000, 'Rp.'),
-('2204JKT999/E/0107', '2024-04-15', 'UPS-APC-01', '100', 'WH-JKT', 'APC UPS 650VA', 10, 950000, 9500000, 0, 950000, 'Rp.');
+INSERT INTO SubPO (Doku, Tgl, Doku_POSem, Kode_Brg, Kode_Dept, Kode_Gudang, Alias, Jumlah, Harga, Total, Diskon, PPN, Kode_Valas) VALUES
+('2201JKT999/E/0100', '2024-01-18', '2201JKT999/E/0100-DRAFT', 'LAPTOP-HP-01', '100', 'WH-JKT', 'HP EliteBook 840', 5, 1500000, 7500000, 0, 750000, 'Rp.'),
+('2201JKT999/E/0100', '2024-01-18', '2201JKT999/E/0100-DRAFT', 'MONITOR-LG-24', '100', 'WH-JKT', 'LG 24-inch Monitor', 5, 1500000, 7500000, 0, 750000, 'Rp.'),
+('2201JKT999/E/0101', '2024-01-22', '2201JKT999/E/0101-DRAFT', 'DESK-OF-01', '200', 'WH-JKT', 'Office Desk', 10, 500000, 5000000, 0, 500000, 'Rp.'),
+('2201JKT999/E/0101', '2024-01-22', '2201JKT999/E/0101-DRAFT', 'CHAIR-OF-01', '200', 'WH-JKT', 'Ergonomic Chair', 10, 350000, 3500000, 0, 350000, 'Rp.'),
+('2202JKT999/E/0102', '2024-02-12', '2202JKT999/E/0102-DRAFT', 'TONER-HP-05A', '400', 'WH-JKT', 'HP 05A Toner', 20, 250000, 5000000, 0, 500000, 'Rp.'),
+('2202JKT999/E/0103', '2024-02-18', '2202JKT999/E/0103-DRAFT', 'SHELF-IND-01', '500', 'WH-BDG', 'Industrial Shelving', 15, 800000, 12000000, 0, 1200000, 'Rp.'),
+('2203JKT999/E/0104', '2024-03-12', '2203JKT999/E/0104-DRAFT', 'PROJECTOR-EP-01', '600', 'WH-JKT', 'Epson Projector', 3, 2500000, 7500000, 0, 750000, 'Rp.'),
+('2203JKT999/E/0105', '2024-03-18', '2203JKT999/E/0105-DRAFT', 'STATIONERY-01', '200', 'WH-JKT', 'Stationery Set', 50, 60000, 3000000, 0, 300000, 'Rp.'),
+('2203JKT999/E/0106', '2024-04-02', '2203JKT999/E/0106-DRAFT', 'AIRCON-PAN-01', '400', 'WH-JKT', 'Panasonic 1PK AC', 10, 2200000, 22000000, 0, 2200000, 'Rp.'),
+('2204JKT999/E/0107', '2024-04-15', '2204JKT999/E/0107-DRAFT', 'UPS-APC-01', '100', 'WH-JKT', 'APC UPS 650VA', 10, 950000, 9500000, 0, 950000, 'Rp.');
 
 GO
 
@@ -246,29 +272,29 @@ INSERT INTO SubVoucherAP (Doku, Tgl, Doku_LPB, Doku_PO, NilaiLPB, Nilai, Diskon,
 GO
 
 -- ============================================================
--- 6. PAYMENTS (Bayar)
+-- 7. PAYMENTS (Hiapt06 / Hiapt02)
 -- ============================================================
 
-SET IDENTITY_INSERT Bayar ON;
-INSERT INTO Bayar (PKindex, Doku, Tgl, Kode_Supplier, Keterangan, NilaiKas, NilaiGiro, STS, Kode_Valas, Kurs, Cara) VALUES
+SET IDENTITY_INSERT Hiapt06 ON;
+INSERT INTO Hiapt06 (PKindex, Doku, Tgl, Kode_Supplier, Keterangan, NilaiKas, NilaiGiro, STS, Kode_Valas, Kurs, Cara) VALUES
 (1, 'PV-2024-0001', '2024-03-25', 'TLT0014', 'Payment for stationery invoice', 3300000, 0, '1', 'Rp.', 1, 'Transfer'),
 (2, 'PV-2024-0002', '2024-04-10', 'TLE0005', 'Partial payment for toner invoice', 2750000, 0, '1', 'Rp.', 1, 'Transfer'),
 (3, 'PV-2024-0003', '2024-04-15', 'TLA0030', 'Payment for IT equipment invoice', 16500000, 0, '1', 'Rp.', 1, 'Transfer'),
 (4, 'PV-2024-0004', '2024-04-20', 'TLT0002', 'Payment for demo equipment', 8250000, 0, '1', 'Rp.', 1, 'Giro'),
 (5, 'PV-2024-0005', '2024-04-25', 'TLS0006', 'Payment for shelving invoice', 13200000, 0, '1', 'Rp.', 1, 'Transfer');
-SET IDENTITY_INSERT Bayar OFF;
+SET IDENTITY_INSERT Hiapt06 OFF;
 
-INSERT INTO SubBayar (Doku, Tgl, Kode_Supplier, Doku_LPB, Giro, Nilai, TotalNilai, Kode_Valas, Kurs, NoUrut, Keterangan, Kode_Bank) VALUES
-('PV-2024-0001', '2024-03-25', 'TLT0014', '2203JKT999/L/0205', NULL, 3000000, 3300000, 'Rp.', 1, 1, 'Stationery payment', 'MANDIRI'),
-('PV-2024-0002', '2024-04-10', 'TLE0005', '2202JKT999/L/0202', NULL, 2500000, 2750000, 'Rp.', 1, 1, 'Toner partial payment', 'BCA'),
-('PV-2024-0003', '2024-04-15', 'TLA0030', '2201JKT999/L/0200', NULL, 15000000, 16500000, 'Rp.', 1, 1, 'IT equipment full payment', 'BCA'),
-('PV-2024-0004', '2024-04-20', 'TLT0002', '2203JKT999/L/0204', NULL, 7500000, 8250000, 'Rp.', 1, 1, 'Demo equipment payment', 'BRI'),
-('PV-2024-0005', '2024-04-25', 'TLS0006', '2202JKT999/L/0203', NULL, 12000000, 13200000, 'Rp.', 1, 1, 'Shelving full payment', 'BNI');
+INSERT INTO Hiapt02 (Doku, Tgl, Kode_Supplier, Doku_Faktur, Doku_LPB, Giro, Nilai, TotalNilai, Kode_Valas, Kurs, NoUrut, Keterangan, Kode_Bank) VALUES
+('PV-2024-0001', '2024-03-25', 'TLT0014', '2203JKT999/E/0255', '2203JKT999/L/0205', NULL, 3000000, 3300000, 'Rp.', 1, 1, 'Stationery payment', 'MANDIRI'),
+('PV-2024-0002', '2024-04-10', 'TLE0005', '2202JKT999/E/0252', '2202JKT999/L/0202', NULL, 2500000, 2750000, 'Rp.', 1, 1, 'Toner partial payment', 'BCA'),
+('PV-2024-0003', '2024-04-15', 'TLA0030', '2201JKT999/E/0250', '2201JKT999/L/0200', NULL, 15000000, 16500000, 'Rp.', 1, 1, 'IT equipment full payment', 'BCA'),
+('PV-2024-0004', '2024-04-20', 'TLT0002', '2203JKT999/E/0254', '2203JKT999/L/0204', NULL, 7500000, 8250000, 'Rp.', 1, 1, 'Demo equipment payment', 'BRI'),
+('PV-2024-0005', '2024-04-25', 'TLS0006', '2202JKT999/E/0253', '2202JKT999/L/0203', NULL, 12000000, 13200000, 'Rp.', 1, 1, 'Shelving full payment', 'BNI');
 
 GO
 
 -- ============================================================
--- 7. ADDITIONAL MASTER DATA FOR AR / SALES MODULES
+-- 8. ADDITIONAL MASTER DATA FOR AR / SALES MODULES
 -- ============================================================
 
 -- SaldoAP

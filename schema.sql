@@ -132,12 +132,12 @@ CREATE TABLE [dbo].[Barang](
     [Harga] [float] NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Bayar]    Script Date: 07/28/2026 03:12:59 PM ******/
+/****** Object:  Table [dbo].[Hiapt06]    Script Date: 07/28/2026 03:12:59 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[Bayar](
+CREATE TABLE [dbo].[Hiapt06](
     [Doku] [varchar](50) NULL,
     [Tgl] [smalldatetime] NULL,
     [Kode_Supplier] [nvarchar](50) NULL,
@@ -158,7 +158,7 @@ CREATE TABLE [dbo].[Bayar](
     [EntryDate] [smalldatetime] NULL,
     [StatusGL] [nvarchar](12) NULL,
     [PKindex] [bigint] IDENTITY(1,1) NOT NULL,
-    CONSTRAINT [PK_Bayar] PRIMARY KEY CLUSTERED ([PKindex]) ON [PRIMARY]
+    CONSTRAINT [PK_Hiapt06] PRIMARY KEY CLUSTERED ([PKindex]) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
 /****** Object:  Table [dbo].[Category]    Script Date: 07/28/2026 03:12:59 PM ******/
@@ -529,13 +529,91 @@ CREATE TABLE [dbo].[LPB](
     [CreatedByInWMS] [nvarchar](50) NULL,
     [CreatedDateInWMS] [datetime] NULL,
     [DPPNilaiLain] [float](53) NULL,
-    [Doku_PCF] [nvarchar](50) NULL,
     CONSTRAINT [PK_LPB] PRIMARY KEY CLUSTERED ([id_lpb]) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
 CREATE NONCLUSTERED INDEX [<Name of Missing Index, sysname,>] ON [dbo].[LPB] ([Tgl]) INCLUDE ([Doku], [Kode_Supplier])
 GO
 CREATE NONCLUSTERED INDEX [idx_Tgl] ON [dbo].[LPB] ([Tgl])
+GO
+/****** Object:  Table [dbo].[POSem]    Script Date: 07/28/2026 03:12:59 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[POSem](
+    [Doku] [nvarchar](50) NULL,
+    [Tgl] [smalldatetime] NULL,
+    [Kode_Supplier] [nvarchar](12) NULL,
+    [DokuVendor] [nvarchar](100) NULL,
+    [TglDokuVendor] [smalldatetime] NULL,
+    [BLAWB] [nvarchar](50) NULL,
+    [Carrier] [nvarchar](100) NULL,
+    [Vessel] [nvarchar](100) NULL,
+    [Arrival] [nvarchar](100) NULL,
+    [PIUD] [nvarchar](100) NULL,
+    [TglPIUD] [smalldatetime] NULL,
+    [Ship] [nvarchar](100) NULL,
+    [TglShip] [smalldatetime] NULL,
+    [TglDeparture] [smalldatetime] NULL,
+    [Discharge] [nvarchar](100) NULL,
+    [Loading] [nvarchar](100) NULL,
+    [CountryOrigin] [nvarchar](100) NULL,
+    [TglCountryOrigin] [smalldatetime] NULL,
+    [Weight] [float](53) NULL,
+    [Memo] [text] NULL,
+    [ContactPr] [nvarchar](40) NULL,
+    [Syarat] [smallint] NULL,
+    [Revisi] [nvarchar](10) NULL,
+    [Terms] [nvarchar](50) NULL,
+    [PPH22] [float](53) NULL,
+    [Diskon] [float](53) NULL,
+    [DiskonTunai] [float](53) NULL,
+    [PPN] [float](53) NULL,
+    [PPnBM] [float](53) NULL,
+    [Nilai] [float](53) NULL,
+    [Kode_dept] [nvarchar](12) NULL,
+    [LC] [char](2) NULL,
+    [Tgl_Pengiriman] [smalldatetime] NULL,
+    [Tgl_Pembayaran] [smalldatetime] NULL,
+    [Pembayaran] [nvarchar](255) NULL,
+    [Penyelesaian] [nvarchar](255) NULL,
+    [ADDITIONAL] [nvarchar](20) NULL,
+    [PEMBUATAN] [nvarchar](30) NULL,
+    [Doku_SPPB] [nvarchar](20) NULL,
+    [Jml_Print] [smallint] NULL,
+    [Kode_Valas] [nvarchar](12) NULL,
+    [Kurs] [float](53) NULL,
+    [Wkt] [smalldatetime] NULL,
+    [DokuExt] [nvarchar](20) NULL,
+    [STS] [nvarchar](3) NULL,
+    [MOS] [nvarchar](100) NULL,
+    [Packing] [nvarchar](100) NULL,
+    [Sign] [nvarchar](10) NULL,
+    [Tipe] [nvarchar](10) NULL,
+    [STSPrint] [nvarchar](1) NULL,
+    [StsVerify] [bit] NULL,
+    [TglVerify] [smalldatetime] NULL,
+    [UserID] [nvarchar](100) NULL,
+    [Hapus] [nvarchar](100) NULL,
+    [EntryDate] [smalldatetime] NULL,
+    [Kode_buyer] [nvarchar](100) NULL,
+    [BiayaMasuk] [float](53) NULL,
+    [BiayaMasukP] [float](53) NULL,
+    [id_posem] [bigint] IDENTITY(1,1) NOT NULL,
+    [Kode_IDN] [nvarchar](50) NULL,
+    [ModulSource] [nvarchar](50) NULL,
+    [CreatedInWMS] [bit] NULL,
+    [CreatedByInWMS] [nvarchar](50) NULL,
+    [CreatedDateInWMS] [datetime] NULL,
+    [DPPNilaiLain] [float](53) NULL,
+    [PPnTunai] [float](53) NULL,
+    CONSTRAINT [PK_POSem] PRIMARY KEY CLUSTERED ([id_posem]) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_POSem_Doku] ON [dbo].[POSem] ([Doku])
+GO
+CREATE NONCLUSTERED INDEX [IX_POSem_Kode_Supplier] ON [dbo].[POSem] ([Kode_Supplier]) INCLUDE ([Doku])
 GO
 /****** Object:  Table [dbo].[PO]    Script Date: 07/28/2026 03:12:59 PM ******/
 SET ANSI_NULLS ON
@@ -616,68 +694,6 @@ GO
 CREATE NONCLUSTERED INDEX [<idxGITI>] ON [dbo].[PO] ([Doku])
 GO
 CREATE NONCLUSTERED INDEX [giti_po_kodeSupplier] ON [dbo].[PO] ([Kode_Supplier]) INCLUDE ([Doku])
-GO
-/****** Object:  Table [dbo].[POConfirmation]    Script Date: 7/2/2026 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-SET ANSI_PADDING ON
-GO
-CREATE TABLE [dbo].[POConfirmation](
-	[Doku] [nvarchar](50) NULL,
-	[Tgl] [smalldatetime] NULL,
-	[Doku_PO] [nvarchar](50) NULL,
-	[Kode_Supplier] [nvarchar](12) NULL,
-	[Kode_dept] [nvarchar](12) NULL,
-	[Kode_Valas] [nvarchar](12) NULL,
-	[Kurs] [float] NULL,
-	[ContactPr] [nvarchar](40) NULL,
-	[Psd] [smalldatetime] NULL,
-	[Etd] [smalldatetime] NULL,
-	[Memo] [text] NULL,
-	[Nilai] [float] NULL,
-	[PPN] [float] NULL,
-	[Diskon] [float] NULL,
-	[STS] [nvarchar](3) NULL,
-	[EntryDate] [smalldatetime] NULL,
-	[id_po_confirmation] [bigint] IDENTITY(1,1) NOT NULL,
-	[RowVersion] [timestamp] NOT NULL,
- CONSTRAINT [PK_POConfirmation] PRIMARY KEY CLUSTERED 
-(
-	[id_po_confirmation] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-
-GO
-SET ANSI_PADDING OFF
-GO
-/****** Object:  Table [dbo].[SubPOConfirmation]    Script Date: 7/2/2026 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-SET ANSI_PADDING ON
-GO
-CREATE TABLE [dbo].[SubPOConfirmation](
-	[Doku] [nvarchar](50) NULL,
-	[id_sub_po] [bigint] NULL,
-	[Kode_Brg] [nvarchar](50) NULL,
-	[Jumlah] [float] NULL,
-	[Harga] [float] NULL,
-	[Total] [float] NULL,
-	[Kode_Gudang] [nvarchar](10) NULL,
-	[Note] [nvarchar](255) NULL,
-	[EntryDate] [smalldatetime] NULL,
-	[id_sub_po_confirmation] [bigint] IDENTITY(1,1) NOT NULL,
- CONSTRAINT [PK_SubPOConfirmation] PRIMARY KEY CLUSTERED 
-(
-	[id_sub_po_confirmation] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-
-GO
-SET ANSI_PADDING OFF
 GO
 /****** Object:  Table [dbo].[SaldoAP]    Script Date: 6/26/2026 3:26:09 PM ******/
 SET ANSI_NULLS ON
@@ -986,8 +1002,6 @@ CREATE TABLE [dbo].[SubLPB](
     [Hapus] [nvarchar](100) NULL,
     [EntryDate] [smalldatetime] NULL,
     [Model] [nvarchar](255) NULL,
-    [Doku_PCF] [nvarchar](50) NULL,
-    [id_sub_po_confirmation] [bigint] NULL,
     CONSTRAINT [PK_SubLPB] PRIMARY KEY CLUSTERED ([id_sub_lpb]) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
@@ -998,6 +1012,70 @@ GO
 CREATE NONCLUSTERED INDEX [SubLPB-Kode_Brg] ON [dbo].[SubLPB] ([Kode_Brg])
 GO
 CREATE NONCLUSTERED INDEX [Tgl_Index] ON [dbo].[SubLPB] ([Tgl])
+GO
+/****** Object:  Table [dbo].[SubPOSem]    Script Date: 07/28/2026 03:12:59 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[SubPOSem](
+    [kode_BRGganti] [nvarchar](50) NULL,
+    [Doku] [nvarchar](50) NULL,
+    [Tgl] [smalldatetime] NULL,
+    [Doku_SPPB] [nvarchar](20) NULL,
+    [NoUrutSPPB] [smallint] NULL,
+    [Kode_Brg] [nvarchar](50) NULL,
+    [Kode_Dept] [nvarchar](12) NULL,
+    [Kode_Gudang] [nvarchar](10) NULL,
+    [Alias] [nvarchar](20) NULL,
+    [HargaJasa] [float](53) NULL,
+    [HargaMaterial] [float](53) NULL,
+    [Harga] [float](53) NULL,
+    [Total] [float](53) NULL,
+    [Kode_Valas] [nvarchar](10) NULL,
+    [Diskon] [float](53) NULL,
+    [DiskonTunai] [float](53) NULL,
+    [Jumlah] [float](53) NULL,
+    [JumlahTemp] [float](53) NULL,
+    [JumlahKirim] [float](53) NULL,
+    [JmlKirimTemp] [float](53) NULL,
+    [JumlahVerify] [float](53) NULL,
+    [JumlahVerifyTemp] [float](53) NULL,
+    [Keterangan] [nvarchar](255) NULL,
+    [PPN] [float](53) NULL,
+    [PPnBm] [float](53) NULL,
+    [PPH22] [float](53) NULL,
+    [RTPO] [float](53) NULL,
+    [REALISASI] [float](53) NULL,
+    [TGL_LPB] [smalldatetime] NULL,
+    [KETNPSD] [nvarchar](50) NULL,
+    [NilValas] [float](53) NULL,
+    [Doku_LPB] [nvarchar](12) NULL,
+    [ExtDokuPO] [nvarchar](20) NULL,
+    [SISA_ORDER_TEMP] [float](53) NULL,
+    [REALISASI_TEMP] [float](53) NULL,
+    [TempNama] [nvarchar](70) NULL,
+    [TglKirim] [smalldatetime] NULL,
+    [Major] [nvarchar](20) NULL,
+    [Ref] [nvarchar](20) NULL,
+    [KodeRnd] [nvarchar](100) NULL,
+    [EntryDate] [smalldatetime] NULL,
+    [Urut] [float](53) NULL,
+    [UserID] [nvarchar](100) NULL,
+    [JumlahKonfirm] [float](53) NULL,
+    [Doku_SO] [nvarchar](255) NULL,
+    [KodeRnd_SO] [nvarchar](255) NULL,
+    [id_sub_posem] [bigint] IDENTITY(1,1) NOT NULL,
+    [Model] [nvarchar](255) NULL,
+    [Merk] [nvarchar](100) NULL,
+    [Satuan] [nvarchar](10) NULL,
+    [DiscPct] [float] NULL,
+    CONSTRAINT [PK_SubPOSem] PRIMARY KEY CLUSTERED ([id_sub_posem]) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_SubPOSem_Kode_Brg] ON [dbo].[SubPOSem] ([Kode_Brg])
+GO
+CREATE NONCLUSTERED INDEX [IX_SubPOSem_Doku] ON [dbo].[SubPOSem] ([Doku]) INCLUDE ([Kode_Brg], [KodeRnd])
 GO
 /****** Object:  Table [dbo].[SubPO]    Script Date: 07/28/2026 03:12:59 PM ******/
 SET ANSI_NULLS ON
@@ -1316,7 +1394,6 @@ CREATE TABLE [dbo].[SubVoucherAP](
     [EntryDate] [smalldatetime] NULL,
     [UserID] [nvarchar](100) NULL,
     [Kode_Supplier] [nvarchar](50) NULL,
-    [Doku_PCF] [nvarchar](50) NULL,
     [APRef] [nvarchar](50) NULL,
     [InvoiceNo] [nvarchar](50) NULL,
     [TglInvoice] [smalldatetime] NULL,
@@ -1843,7 +1920,6 @@ CREATE TABLE [dbo].[VoucherAP](
     [MajorDiskon] [nvarchar](20) NULL,
     [AWBBL] [nvarchar](100) NULL,
     [DPPNilaiLain] [float](53) NULL,
-    [Doku_PCF] [nvarchar](50) NULL,
     [NOPEN] [nvarchar](50) NULL,
     [TglNopen] [smalldatetime] NULL,
     [AWB_BL] [nvarchar](50) NULL,
@@ -1864,13 +1940,13 @@ CREATE NONCLUSTERED INDEX [IX_VoucherAP_TipeBiaya_Doku]
     ON [dbo].[VoucherAP] ([TipeBiaya], [Doku]);
 GO
 
--- SubBayar (prod-faithful: Doku_Faktur/Giro/Kode_Bank FX-payment columns)
-/****** Object:  Table [dbo].[SubBayar]    Script Date: 07/28/2026 03:12:59 PM ******/
+-- Hiapt02 (prod-faithful: Doku_Faktur/Giro/Kode_Bank FX-payment columns)
+/****** Object:  Table [dbo].[Hiapt02]    Script Date: 07/28/2026 03:12:59 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[SubBayar](
+CREATE TABLE [dbo].[Hiapt02](
     [PKbas] [bigint] IDENTITY(1,1) NOT NULL,
     [Doku] [varchar](50) NULL,
     [Tgl] [smalldatetime] NULL,
@@ -1907,7 +1983,7 @@ CREATE TABLE [dbo].[SubBayar](
     [NoUrutDN] [int] NULL,
     [ReferenceKasBank] [nvarchar](50) NULL,
     [FakturPajak] [nvarchar](30) NULL,
-    CONSTRAINT [PK_SubBayar] PRIMARY KEY CLUSTERED ([PKbas]) ON [PRIMARY]
+    CONSTRAINT [PK_Hiapt02] PRIMARY KEY CLUSTERED ([PKbas]) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
 /****** Object:  Table [dbo].[ReturBeli]    Script Date: 07/28/2026 03:12:59 PM ******/
@@ -2003,13 +2079,15 @@ GO
 -- Optimistic Concurrency: RowVersion on transaction headers
 ALTER TABLE [dbo].[SPB] ADD [RowVersion] ROWVERSION NOT NULL;
 GO
+ALTER TABLE [dbo].[POSem] ADD [RowVersion] ROWVERSION NOT NULL;
+GO
 ALTER TABLE [dbo].[PO] ADD [RowVersion] ROWVERSION NOT NULL;
 GO
 ALTER TABLE [dbo].[LPB] ADD [RowVersion] ROWVERSION NOT NULL;
 GO
 ALTER TABLE [dbo].[Faktur] ADD [RowVersion] ROWVERSION NOT NULL;
 GO
-ALTER TABLE [dbo].[Bayar] ADD [RowVersion] ROWVERSION NOT NULL;
+ALTER TABLE [dbo].[Hiapt06] ADD [RowVersion] ROWVERSION NOT NULL;
 GO
 ALTER TABLE [dbo].[Supplier] ADD [RowVersion] ROWVERSION NOT NULL;
 GO
