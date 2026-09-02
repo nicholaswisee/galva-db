@@ -38,7 +38,7 @@ user `remote9`. Credentials are not checked in.
 Purchase Requisition  →  SPB / SubSPB
        │
        ▼
-Purchase Order        →  POSem / SubPOSem  (prod only — not in local schema)
+Purchase Order        →  POSem / SubPOSem
        │                 referenced via Doku_POSem columns in PO / SubPO
        ▼
 PO Confirmation       →  PO / SubPO
@@ -50,7 +50,7 @@ Goods Receipt         →  LPB / SubLPB
 AP Invoice            →  VoucherAP / SubVoucherAP
        │
        ▼
-Payment               →  Bayar / SubBayar
+Payment               →  Hiapt06 / Hiapt02
        │
        ▼
 Purchase Return       →  ReturBeli / SubReturBeli  (optional)
@@ -60,9 +60,8 @@ AR Receipt Notes      →  TandaTerimaAr / SubTandaTerimaAr
 
 > **ERP naming convention:** In the production system `POSem` is what the
 > business calls a **Purchase Order** (draft), and `PO` is what the business
-> calls a **PO Confirmation** (finalized). The local `POConfirmation` /
-> `SubPOConfirmation` tables are mockup-only staging tables and are **not** part
-> of the canonical flow.
+> calls a **PO Confirmation** (finalized). Both table pairs are in the local
+> schema; `PO` and `SubPO` retain `Doku_POSem` references to their drafts.
 
 ## Layout
 
@@ -71,22 +70,24 @@ AR Receipt Notes      →  TandaTerimaAr / SubTandaTerimaAr
 | `schema.sql`            | Full T-SQL schema for `ErpApMockup`. Source of truth.     |
 | `seeds/`                | Synthetic seed data (`seed-synthetic.sql`).               |
 | `docs/AGENTIC_CONTEXT.md` | Agentic knowledge bank — schema facts, gotchas, join map. |
+| `validate-schema.sh`    | Lightweight static naming validation; no Docker required.  |
 | `docker-compose.yml`    | SQL Server 2022 service definition.                       |
 | `seed.sh`               | Reset or seed the running container.                      |
 | `.env` / `.env.example` | Local credentials (gitignored) / template.                |
 
 ## Keeping schema.sql in sync with prod
 
-`schema.sql` is rebuilt from production table schemas for the relevant P2P
-subset (masters, PR, PO, GR, AP invoice, payment, returns, and receipts).
-Use the temporary scripts in `/tmp` (not committed) to re-extract when needed:
+`schema.sql` is the local source of truth for the relevant P2P subset (masters,
+PR, draft PO, PO confirmation, GR, AP invoice, payment, returns, and receipts).
+Production extraction scripts are not present in this repository.
 
-- `/tmp/extract_prod_schemas.py` — extracts CREATE TABLE blocks from prod.
-- `/tmp/update_schema_final.py` — merges prod schemas into `schema.sql` while
-  preserving local additions (`RowVersion`, `Doku_PCF`, invoice import columns,
-  etc.).
+Run the non-Docker naming check after any edit:
 
-Re-validate after any edit:
+```bash
+bash ./validate-schema.sh
+```
+
+Then, when Docker is available, validate a clean database initialization:
 
 ```bash
 docker compose down -v
@@ -104,7 +105,7 @@ docker compose up -d
 - **RowVersion columns.** Added locally to transaction tables for optimistic
   concurrency. Never specify in INSERT/UPDATE — SQL Server manages them.
 - **Computed columns.** `SubSPB.Jumhar` is `AS ([jumlah]*[Harga])`.
-- **`POSem` ≠ `PO`.** `POSem`/`SubPOSem` (prod-only) = Purchase Orders.
+- **`POSem` ≠ `PO`.** `POSem`/`SubPOSem` (local + prod) = Purchase Orders.
   `PO`/`SubPO` (local + prod) = PO Confirmations. See `docs/AGENTIC_CONTEXT.md`.
 - **Soft deletes.** All transaction tables use `Hapus IS NULL` for active
   records. Never hard-delete ERP rows.

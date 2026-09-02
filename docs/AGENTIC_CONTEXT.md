@@ -27,7 +27,7 @@ Purchase Requisition
         │
         ▼
 Purchase Order   ← "POSem" in production naming (sementara = preliminary/draft)
-    POSem / SubPOSem   (prod tables: not present locally — referenced by Doku_POSem)
+    POSem / SubPOSem
         │
         ▼
 PO Confirmation  ← "PO" in production naming (the finalized purchase order)
@@ -43,7 +43,7 @@ AP Invoice
         │
         ▼
 Payment
-    Bayar / SubBayar
+    Hiapt06 / Hiapt02
         │
         ▼
 Purchase Return (optional branch off GR/Payment)
@@ -62,9 +62,8 @@ The production ERP uses **inverted terminology** from what you might expect:
 | `POSem` / `SubPOSem` | **Purchase Order** (initial, draft) | Issued to supplier |
 | `PO` / `SubPO` | **PO Confirmation** (finalized) | Confirmed by supplier |
 
-- **`POSem`** = *sementara* (Indonesian: "temporary/preliminary"). This is the **initial Purchase Order** sent to the supplier. Production tables only; **not present in the local `ErpApMockup` schema**.
+- **`POSem`** = *sementara* (Indonesian: "temporary/preliminary"). This is the **initial Purchase Order** sent to the supplier and is present in the local `ErpApMockup` schema.
 - **`PO`** = the **PO Confirmation** — the supplier-confirmed, finalized purchase order. This **is** present locally and is the table used for downstream GR/AP flows.
-- **`POConfirmation` / `SubPOConfirmation`** — local-only staging tables added during mockup development. They are **NOT part of the canonical P2P flow** and are not present in production. Do not treat them as a real flow step.
 
 The `PO` header has `[Doku_POSem]` which stores the document number of the
 originating `POSem` (the draft PO). `SubPO` lines also carry `[Doku_POSem]`
@@ -79,13 +78,13 @@ Every transaction follows the same header → detail shape:
 | Business Name | Header Table | Detail Table | Header PK | Detail PK |
 |---|---|---|---|---|
 | Purchase Requisition | `SPB` | `SubSPB` | `id_spb` | `id_sub_spb` |
-| Purchase Order (draft) | `POSem` *(prod only)* | `SubPOSem` *(prod only)* | — | — |
+| Purchase Order (draft) | `POSem` | `SubPOSem` | `id_posem` | `id_sub_posem` |
 | PO Confirmation | `PO` | `SubPO` | `id_po` | `id_sub_po` |
 | Goods Receipt | `LPB` | `SubLPB` | `id_lpb` | `id_sub_lpb` |
 | AP Invoice | `VoucherAP` | `SubVoucherAP` | `PKbas` | `PKbas` |
-| Payment | `Bayar` | `SubBayar` | `PKindex` | `PKbas` |
+| Payment | `Hiapt06` | `Hiapt02` | `PKindex` | `PKbas` |
 | Purchase Return | `ReturBeli` | `SubReturBeli` | `PKbas` | `PKbas` |
-| AR Receipt Note | `TandaTerimaAr` | `SubTandaTerimaAr` | `id_tanda_terima_ar` | `id_sub_tanda_terima_ar` |
+| AR Receipt Note | `TandaTerimaAr` | `SubTandaTerimaAr` | `PKbas` | `PKbas` |
 
 **Document number column:** always `[Doku]` on both header and detail.
 Cross-references between tables use `[Doku_<SourceTable>]` columns
@@ -118,14 +117,16 @@ Cross-references between tables use `[Doku_<SourceTable>]` columns
 |---|---|---|---|
 | `SPB` | `dbo.SPB` | `id_spb` | Purchase Requisition header. Heavily wide: 80+ columns include customer refs, project codes, shipping details. `RowVersion` added locally. |
 | `SubSPB` | `dbo.SubSPB` | `id_sub_spb` | PR line items. `Jumhar` is a **computed column**: `AS ([jumlah]*[Harga])`. Cannot specify NULL on it. |
+| `POSem` | `dbo.POSem` | `id_posem` | Draft Purchase Order header. Copied locally from the confirmed PO shape without `Doku_POSem`; `RowVersion` added locally. |
+| `SubPOSem` | `dbo.SubPOSem` | `id_sub_posem` | Draft Purchase Order lines. Copied locally from the confirmed PO shape without `Doku_POSem`. |
 | `PO` | `dbo.PO` | `id_po` | **PO Confirmation** in business terms (see §2 naming gotcha). Has `Doku_POSem` reference to draft PO. `RowVersion` added locally. Indexed on `Doku` and `Kode_Supplier`. |
 | `SubPO` | `dbo.SubPO` | `id_sub_po` | PO Confirmation line items. Local additions: `Merk`, `Satuan`, `DiscPct`. Has `Doku_POSem` tracking back to draft. `JumlahKonfirm` tracks supplier-confirmed qty. |
-| `LPB` | `dbo.LPB` | `id_lpb` | **Goods Receipt** header. `Doku_PCF` added locally to link to PO Confirmation doc. `RowVersion` added locally. Wide: 50+ columns covering freight cost sub-documents (Asuransi, Interest, LC, Bea, Angkut, Exp1, Exp2, Lain). |
-| `SubLPB` | `dbo.SubLPB` | `id_sub_lpb` | GR line items. `Doku_PCF` added locally. `id_sub_po_confirmation` added locally (line-level GR → POConfirmation link — legacy, see §6). |
-| `VoucherAP` | `dbo.VoucherAP` | `PKbas` | AP Invoice header. Local additions: `Doku_PCF`, `NOPEN`, `TglNopen`, `AWB_BL`, `SourceType`, `RowVersion`. Has `CHECK` constraint: `TipeBiaya IN ('LPB', 'PO')`. |
-| `SubVoucherAP` | `dbo.SubVoucherAP` | `PKbas` | AP Invoice lines. Local additions: `Doku_PCF`, `APRef`, `InvoiceNo`, `TglInvoice`, `Doku_FP`, `Tgl_FP`, `SourceType`. Same `TipeBiaya` check constraint. |
-| `Bayar` | `dbo.Hiapt06` | `PKindex` | **Payment** header. Prod source table is `Hiapt06`; local name `Bayar` uses `DokuBayar` mapping. `RowVersion` added locally. |
-| `SubBayar` | `dbo.Hiapt02` | `PKbas` | Payment lines allocated to vouchers. References `Doku_Faktur` (voucher doc) and `Doku_LPB`. |
+| `LPB` | `dbo.LPB` | `id_lpb` | **Goods Receipt** header. `RowVersion` added locally. Wide: 50+ columns covering freight cost sub-documents (Asuransi, Interest, LC, Bea, Angkut, Exp1, Exp2, Lain). |
+| `SubLPB` | `dbo.SubLPB` | `id_sub_lpb` | GR line items. |
+| `VoucherAP` | `dbo.VoucherAP` | `PKbas` | AP Invoice header. Local additions: `NOPEN`, `TglNopen`, `AWB_BL`, `SourceType`, `RowVersion`. Has `CHECK` constraint: `TipeBiaya IN ('LPB', 'PO')`. |
+| `SubVoucherAP` | `dbo.SubVoucherAP` | `PKbas` | AP Invoice lines. Local additions: `APRef`, `InvoiceNo`, `TglInvoice`, `Doku_FP`, `Tgl_FP`, `SourceType`. Same `TipeBiaya` check constraint. |
+| `Hiapt06` | `dbo.Hiapt06` | `PKindex` | **Payment** header. `RowVersion` added locally. |
+| `Hiapt02` | `dbo.Hiapt02` | `PKbas` | Payment lines allocated to vouchers. References `Doku_Faktur` (voucher doc) and `Doku_LPB`. |
 
 ### 4c. Returns and Receipts
 
@@ -133,8 +134,8 @@ Cross-references between tables use `[Doku_<SourceTable>]` columns
 |---|---|---|---|
 | `ReturBeli` | `dbo.ReturBeli` | `PKbas` | Purchase Return header. Local `RowVersion` added. |
 | `SubReturBeli` | `dbo.SubReturBeli` | `PKbas` | Return line items. References `Doku_LPB`. Local `RowVersion` added. |
-| `TandaTerimaAr` | `dbo.TandaTerimaAr` | `id_tanda_terima_ar` | AR Receipt Note header. Local `RowVersion` added. |
-| `SubTandaTerimaAr` | `dbo.SubTandaTerimaAr` | `id_sub_tanda_terima_ar` | AR Receipt Note lines. |
+| `TandaTerimaAr` | `dbo.TandaTerimaAr` | `PKbas` | AR Receipt Note header. Local `RowVersion` added. |
+| `SubTandaTerimaAr` | `dbo.SubTandaTerimaAr` | `PKbas` | AR Receipt Note lines. |
 
 ### 4d. Inventory / Stock
 
@@ -152,7 +153,6 @@ P2P or production flow:
 
 | Table | Purpose |
 |---|---|
-| `POConfirmation` / `SubPOConfirmation` | Local staging tables; NOT a real flow step. See §2 and §6. |
 | `Master_Users` | Application user store for the mockup API. |
 | `Tx_IdempotencyRecord` | API-layer idempotency key store. |
 | `Tx_PushSubscription` | Web-push notification subscriptions. |
@@ -175,9 +175,8 @@ These are carried over from early mockup builds and are **not actively used**:
 |---|---|
 | `[Doku]` | The document number of **this** record (header or detail) |
 | `[Doku_PO]` | Reference to a **PO** (`PO.Doku`) document |
-| `[Doku_POSem]` | Reference to a **POSem** (draft PO) document — prod only |
+| `[Doku_POSem]` | Reference to a **POSem** (draft PO) document |
 | `[Doku_LPB]` | Reference to a **LPB** (GR) document |
-| `[Doku_PCF]` | Reference to a **POConfirmation** document (local-only linkage, legacy) |
 | `[Doku_Faktur]` | Reference to a **VoucherAP** document |
 | `[Doku_SPPB]` | Reference to a shipping/packing document |
 | `[Doku_SO]` | Reference to a sales order document |
@@ -186,12 +185,12 @@ These are carried over from early mockup builds and are **not actively used**:
 
 | Column | Table(s) | Values / Meaning |
 |---|---|---|
-| `STS` | `PO`, `LPB`, `POConfirmation` | Short status code (1-3 chars). Not enum-constrained by DB. |
-| `Sts` | `SPB`, `Bayar`, `APMuka` | Variant spelling (mixed case); same pattern. |
+| `STS` | `PO`, `LPB` | Short status code (1-3 chars). Not enum-constrained by DB. |
+| `Sts` | `SPB`, `Hiapt06`, `APMuka` | Variant spelling (mixed case); same pattern. |
 | `Status` | `LPB`, `SubSPB` | Extended status string. |
 | `StsVerify` | `SPB`, `PO` | `bit` — verified flag. |
 | `TglVerify` | `SPB`, `PO` | Date of verification. |
-| `StatusGL` | `Bayar`, `LPB` | GL posting status string. |
+| `StatusGL` | `Hiapt06`, `LPB` | GL posting status string. |
 | `Hapus` | Most tables | Soft-delete: `NULL` = active, non-null = deleted (stores user/timestamp). **Never hard-delete.** |
 
 ### Financial Columns
@@ -231,24 +230,17 @@ preserved** (not overwritten by prod extracts):
 | Table | Local Columns | Purpose |
 |---|---|---|
 | `SPB` | `RowVersion` | Optimistic concurrency |
+| `POSem` | `RowVersion` | Optimistic concurrency |
 | `PO` | `RowVersion` | Optimistic concurrency |
-| `LPB` | `Doku_PCF`, `RowVersion` | PCF link, concurrency |
-| `SubLPB` | `Doku_PCF`, `id_sub_po_confirmation` | PCF link (header + line-level) |
-| `VoucherAP` | `Doku_PCF`, `NOPEN`, `TglNopen`, `AWB_BL`, `SourceType`, `RowVersion` | PCF link, invoice import fields |
-| `SubVoucherAP` | `Doku_PCF`, `APRef`, `InvoiceNo`, `TglInvoice`, `Doku_FP`, `Tgl_FP`, `SourceType` | Invoice import fields |
+| `LPB` | `RowVersion` | Optimistic concurrency |
+| `VoucherAP` | `NOPEN`, `TglNopen`, `AWB_BL`, `SourceType`, `RowVersion` | Invoice import fields |
+| `SubVoucherAP` | `APRef`, `InvoiceNo`, `TglInvoice`, `Doku_FP`, `Tgl_FP`, `SourceType` | Invoice import fields |
 | `SubPO` | `Merk`, `Satuan`, `DiscPct` | Brand, unit, pct discount |
 | `Barang` | `Merk`, `Satuan`, `Harga` | Brand, unit, price |
-| `Bayar` | `RowVersion` | Optimistic concurrency |
+| `Hiapt06` | `RowVersion` | Optimistic concurrency |
 | `Faktur` | `RowVersion` | Optimistic concurrency |
 | `Supplier` | `RowVersion` | Optimistic concurrency |
 | `SubReturBeli` | `RowVersion` | Optimistic concurrency |
-
-### About `Doku_PCF` and `id_sub_po_confirmation`
-
-These columns reference the local `POConfirmation` / `SubPOConfirmation` tables.
-They are **legacy linkage fields** — the `POConfirmation` tables are not part of
-the canonical flow (see §2), but these columns remain in prod-mirrored tables
-to avoid breaking existing data and API logic. Do not remove them.
 
 ---
 
@@ -292,57 +284,49 @@ to avoid breaking existing data and API logic. Do not remove them.
 7. **`VALAS2` has no PK and no unique index.** To get the current rate for a
    currency on a given day, always `TOP 1 ... ORDER BY Tanggal DESC`.
 
-8. **Inline defaults instead of `ALTER TABLE ADD DEFAULT`.** Prod extracts use
-   `ALTER TABLE ADD DEFAULT` statements. These cause duplicate-constraint errors
-   if the schema is re-applied. The `update_schema_final.py` script converts
-   them to inline `DEFAULT` clauses in `CREATE TABLE`. Do not reintroduce
-   `ALTER TABLE ADD DEFAULT` statements.
+8. **Inline defaults instead of `ALTER TABLE ADD DEFAULT`.** `ALTER TABLE ADD
+   DEFAULT` statements cause duplicate-constraint errors if the schema is
+   re-applied. Do not introduce them.
 
 9. **`<Name of Missing Index, sysname,>` index names.** Some indexes in the
    schema have placeholder names from SSMS's missing-index hints:
    `CREATE NONCLUSTERED INDEX [<Name of Missing Index, sysname,>]`. These are
    prod-faithful and safe to leave as-is.
 
-10. **`SET ANSI_PADDING OFF`** appears after some older table blocks
-    (`POConfirmation`, `SubPOConfirmation`). This is prod-faithful boilerplate
-    from old SSMS versions. Do not remove it.
+10. **`Doku_POSem` in `PO` and `SubPO`.** This column stores the document number
+    of the originating local `POSem` draft PO.
 
-11. **`TEXTIMAGE_ON [PRIMARY]`** on `POConfirmation` — required because of the
-    `[Memo] [text]` column. SQL Server requires this for `text`/`image` columns.
-
-12. **`Doku_POSem` in `PO` and `SubPO`.** This column stores the document number
-    of the originating `POSem` (draft PO) from production. In the local schema,
-    no `POSem` table exists — the column is kept for data completeness when
-    seeding from production.
+11. **`APMuka.Doku_Bayar` and `APMuka.TglDokuBayar` remain unchanged.** These
+    existing columns are retained to avoid a backend refactor.
 
 ### Data Modelling
 
-13. **`PO.TipeBiaya` and `VoucherAP.TipeBiaya` CHECK constraint.**
+12. **`PO.TipeBiaya` and `VoucherAP.TipeBiaya` CHECK constraint.**
     Both are constrained to `NULL OR IN ('LPB', 'PO')`. This controls which
     upstream document an AP invoice draws from — either a Goods Receipt (`LPB`)
     or directly from a PO Confirmation (`PO`). Always set this correctly when
     creating AP records.
 
-14. **`SubBayar.Doku_Faktur` → `VoucherAP.Doku`.** Payment lines reference the
+13. **`Hiapt02.Doku_Faktur` → `VoucherAP.Doku`.** Payment lines reference the
     AP invoice by its document number, not its PK. Join on `Doku_Faktur = VoucherAP.Doku`.
 
-15. **`LPB.Doku_PO` and `SubLPB.Doku_PO`.** Both store the PO Confirmation doc
+14. **`LPB.Doku_PO` and `SubLPB.Doku_PO`.** Both store the PO Confirmation doc
     number (`PO.Doku`). The GR header references the PO at the document level,
     not by `id_po`.
 
-16. **Soft deletes are universal.** All prod-mirrored transaction tables have a
+15. **Soft deletes are universal.** All prod-mirrored transaction tables have a
     `[Hapus]` column. A non-null value means the record is logically deleted.
     All queries that list active records must filter `WHERE Hapus IS NULL`.
 
-17. **`SubSPB.Jenis` and `SubSPB.KirimKd` have `DEFAULT ('')`** — non-null
+16. **`SubSPB.Jenis` and `SubSPB.KirimKd` have `DEFAULT ('')`** — non-null
     with empty string default, not NULL. Always include them in inserts or
     rely on the default.
 
-18. **`Dept` carries signature-block columns** (`Nama10..52`, `Jabatan10..52`,
+17. **`Dept` carries signature-block columns** (`Nama10..52`, `Jabatan10..52`,
     `SignPO`, `PossPO`, `SignFaktur`, etc.). These are used in PDF report
     rendering for approval signatures. Do not strip them.
 
-19. **`SPB` is a sales-side table in prod**, but is used in this mockup as a
+18. **`SPB` is a sales-side table in prod**, but is used in this mockup as a
     generic requisition (the AP side). The `Kode_Customer` column in `SPB`
     refers to the requesting entity/department — not a customer in the AP sense.
 
@@ -360,11 +344,9 @@ to avoid breaking existing data and API logic. Do not remove them.
     re-runs `schema.sql` + `seeds/seed-synthetic.sql`. It is the canonical
     "start fresh" operation.
 
-23. **Production seed extraction scripts are in `/tmp`** (not committed):
-    - `/tmp/extract_prod_schemas.py` — pulls CREATE TABLE blocks from prod.
-    - `/tmp/update_schema_final.py` — merges prod schemas into `schema.sql`.
-    - `/tmp/extract-from-prod-corrected.py` — extracts live data rows.
-    These are ephemeral; do not depend on them being present.
+23. **Production extraction scripts are unavailable.** Do not depend on `/tmp`
+    scripts or attempt production access; update the local source of truth and
+    synthetic seed together instead.
 
 ---
 
@@ -378,10 +360,13 @@ SPB.Doku
   → SubSPB.Doku                        (PR header → PR lines)
   → SubSPB.Doku_PO                     (PR line → PO Confirmation Doku)
 
+POSem.Doku                             (Purchase Order draft)
+  → SubPOSem.Doku                      (draft header → lines)
+  → PO.Doku_POSem                      (PO Confirmation → draft)
+  → SubPO.Doku_POSem                   (PO Confirmation line → draft)
+
 PO.Doku                                (PO Confirmation)
   → SubPO.Doku                         (PO Confirmation header → lines)
-  → PO.Doku_POSem                      (PO Confirmation → Draft PO, prod ref)
-  → SubPO.Doku_POSem                   (PO line → Draft PO ref)
   → LPB.Doku_PO                        (GR header → PO Confirmation)
   → SubLPB.Doku_PO                     (GR line → PO Confirmation)
   → VoucherAP.Doku_PO                  (AP invoice → PO Confirmation)
@@ -391,23 +376,15 @@ LPB.Doku                               (Goods Receipt)
   → SubLPB.Doku                        (GR header → GR lines)
   → VoucherAP.Doku_LPB                 (AP invoice → GR)
   → SubVoucherAP.Doku_LPB              (AP invoice line → GR)
-  → SubBayar.Doku_LPB                  (Payment line → GR)
+  → Hiapt02.Doku_LPB                   (Payment line → GR)
   → SubReturBeli.Doku_LPB              (Return line → GR)
 
 VoucherAP.Doku                         (AP Invoice)
   → SubVoucherAP.Doku                  (AP invoice header → lines)
-  → SubBayar.Doku_Faktur               (Payment line → AP invoice)
+  → Hiapt02.Doku_Faktur                (Payment line → AP invoice)
 
-Bayar.Doku                             (Payment)
-  → SubBayar.Doku                      (Payment header → lines)
-
-POConfirmation.Doku (local only)
-  → SubPOConfirmation.Doku             (PCF header → lines)
-  → LPB.Doku_PCF                       (GR → PCF, legacy local link)
-  → SubLPB.Doku_PCF                    (GR line → PCF, legacy)
-  → SubLPB.id_sub_po_confirmation      (GR line → PCF line, PK-level legacy link)
-  → VoucherAP.Doku_PCF                 (AP → PCF, legacy)
-  → SubVoucherAP.Doku_PCF              (AP line → PCF, legacy)
+Hiapt06.Doku                           (Payment)
+  → Hiapt02.Doku                       (Payment header → lines)
 ```
 
 ---
@@ -418,20 +395,20 @@ POConfirmation.Doku (local only)
 |---|---|---|
 | `SPB` | `id_spb` | `bigint IDENTITY` |
 | `SubSPB` | `id_sub_spb` | `bigint IDENTITY` |
+| `POSem` | `id_posem` | `bigint IDENTITY` |
+| `SubPOSem` | `id_sub_posem` | `bigint IDENTITY` |
 | `PO` | `id_po` | `bigint IDENTITY` |
 | `SubPO` | `id_sub_po` | `bigint IDENTITY` |
 | `LPB` | `id_lpb` | `bigint IDENTITY` |
 | `SubLPB` | `id_sub_lpb` | `bigint IDENTITY` |
 | `VoucherAP` | `PKbas` | `bigint IDENTITY` |
 | `SubVoucherAP` | `PKbas` | `bigint IDENTITY` |
-| `Bayar` | `PKindex` | `bigint IDENTITY` |
-| `SubBayar` | `PKbas` | `bigint IDENTITY` |
+| `Hiapt06` | `PKindex` | `bigint IDENTITY` |
+| `Hiapt02` | `PKbas` | `bigint IDENTITY` |
 | `ReturBeli` | `PKbas` | `bigint IDENTITY` |
 | `SubReturBeli` | `PKbas` | `bigint IDENTITY` |
-| `TandaTerimaAr` | `id_tanda_terima_ar` | `bigint IDENTITY` |
-| `SubTandaTerimaAr` | `id_sub_tanda_terima_ar` | `bigint IDENTITY` |
-| `POConfirmation` | `id_po_confirmation` | `bigint IDENTITY` |
-| `SubPOConfirmation` | `id_sub_po_confirmation` | `bigint IDENTITY` |
+| `TandaTerimaAr` | `PKbas` | `bigint IDENTITY` |
+| `SubTandaTerimaAr` | `PKbas` | `bigint IDENTITY` |
 | `Supplier` | `id_supplier` | `bigint IDENTITY` |
 | `Dept` | `id_dept` | `bigint IDENTITY` |
 | `Gudang` | `id_gudang` | `bigint IDENTITY` |
@@ -475,8 +452,8 @@ POConfirmation.Doku (local only)
 | User | `remote9` |
 | Password | `Remote!@#123` |
 
-> **Never commit production credentials.** Extraction scripts in `/tmp` are
-> not part of the repo.
+> **Never commit production credentials or connect to production.** Extraction
+> scripts are unavailable in this repository.
 
 ---
 
@@ -485,6 +462,7 @@ POConfirmation.Doku (local only)
 ```
 galva-db/
 ├── schema.sql                  ← single source of truth for all DDL
+├── validate-schema.sh           ← non-Docker static naming validation
 ├── docker-compose.yml          ← SQL Server 2022 service definition
 ├── seed.sh                     ← reset and/or seed the container
 ├── seeds/
@@ -504,6 +482,12 @@ galva-db/
 
 ```bash
 cd galva-db
+bash ./validate-schema.sh
+```
+
+When Docker is available, also validate a fresh database initialization:
+
+```bash
 docker compose down -v
 docker compose up -d
 # wait ~30s for healthy
@@ -524,37 +508,11 @@ cat your_change.sql | docker exec -i galva-mssql \
 **Warning:** This approach does not test the full `schema.sql` cleanly. Always
 do a full reset before committing schema changes.
 
-### Re-extract production schemas
+### Production re-extraction
 
-```bash
-/tmp/galva-db-venv/bin/python /tmp/extract_prod_schemas.py   # → /tmp/prod_schemas.sql
-/tmp/galva-db-venv/bin/python /tmp/update_schema_final.py    # merges into schema.sql
-```
-
-Then validate with a full reset.
-
-### Re-extract production seed data
-
-```bash
-/tmp/galva-db-venv/bin/python /tmp/extract-from-prod-corrected.py \
-  [--n-pos 30] [--output /tmp/seed-from-prod-corrected.sql]
-
-# Apply after resetting:
-cd galva-db
-./seed.sh --reset --no-seed
-PASSWORD=$(grep '^MSSQL_SA_PASSWORD=' .env | cut -d= -f2 | tr -d "'\"")
-tr -d '\r' < /tmp/seed-from-prod-corrected.sql | docker exec -i galva-mssql \
-  /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$PASSWORD" -C -h -1 -W
-```
-
-### Add a new prod-mirrored table
-
-1. Add the table name to `TABLES` in both `/tmp/extract_prod_schemas.py` and
-   `/tmp/update_schema_final.py`.
-2. If new to the local schema, add an `INSERT_AFTER` anchor in
-   `/tmp/update_schema_final.py`.
-3. Add any local-only columns to `LOCAL_ADDITIONS`.
-4. Re-extract and validate.
+Production extraction scripts are unavailable. Do not fabricate replacement
+scripts or connect to production; coordinate a separately approved extraction
+workflow before refreshing production-derived tables or seed data.
 
 ---
 
@@ -588,8 +546,6 @@ tr -d '\r' < /tmp/seed-from-prod-corrected.sql | docker exec -i galva-mssql \
 - **Do not commit** production credentials, `.venv/`, or `__pycache__/`.
 - **Do not manually edit** `seeds/seed-synthetic.sql` for structural changes;
   update `schema.sql` first, then adjust seed data if column lists change.
-- **Do not treat `POConfirmation`/`SubPOConfirmation`** as a canonical flow step.
-  They are local-only staging tables not present in prod.
 - **Do not hard-delete** rows from any ERP table. Use the `Hapus` soft-delete
   pattern instead.
 - **Do not insert or update `RowVersion`** columns — SQL Server manages them.
